@@ -5,6 +5,7 @@ import Sidebar from './layout/Sidebar';
 import AdminDashboard from './dashboard/AdminDashboard';
 import AffiliateDashboard from './dashboard/AffiliateDashboard';
 import AffiliatesManagement from './admin/AffiliatesManagement';
+import AnalyticsTabs from './analytics/AnalyticsTabs';
 
 const MainApp = () => {
   const { user } = useAuth();
@@ -26,7 +27,7 @@ const MainApp = () => {
         case 'payouts':
           return <div className="p-6">Payout Management (Coming Soon)</div>;
         case 'analytics':
-          return <div className="p-6">Analytics (Coming Soon)</div>;
+          return <AnalyticsTabs onNavigate={setCurrentPage} />;
         case 'tiers':
           return <div className="p-6">Tier Management (Coming Soon)</div>;
         case 'settings':
