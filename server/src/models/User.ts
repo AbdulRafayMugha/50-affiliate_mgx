@@ -1,0 +1,326 @@
+import { pool } from '../database/init';
+import bcrypt from 'bcryptjs';
+import { v4 as uuidv4 } from 'uuid';
+
+export interface User {
+  id: string;
+  email: string;
+  password_hash?: string;
+  name: string;
+  role: 'admin' | 'affiliate' | 'client';
+  referrer_id?: string;
+  referral_code: string;
+  tier: 'Bronze' | 'Silver' | 'Gold' | 'Platinum';
+  is_active: boolean;
+  email_verified: boolean;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface CreateUserInput {
+  email: string;
+  password: string;
+  name: string;
+  role?: 'admin' | 'affiliate' | 'client';
+  referrer_code?: string;
+}
+
+export class UserModel {
+  static async create(input: CreateUserInput): Promise<User> {
+    const client = await pool.connect();
+    
+    try {
+      await client.query('BEGIN');
+      
+      // Hash password
+      const password_hash = await bcrypt.hash(input.password, 12);
+      
+      // Generate unique referral code
+      let referral_code: string;
+      let isUnique = false;
+      
+      while (!isUnique) {
+        referral_code = this.generateReferralCode();
+        const { rows } = await client.query(
+          'SELECT id FROM users WHERE referral_code = $1',
+          [referral_code]
+        );
+        isUnique = rows.length === 0;
+      }
+      
+      // Find referrer if referrer_code is provided
+      let referrer_id = null;
+      if (input.referrer_code) {
+        const { rows } = await client.query(
+          'SELECT id FROM users WHERE referral_code = $1 AND is_active = true',
+          [input.referrer_code]
+        );
+        if (rows.length > 0) {
+          referrer_id = rows[0].id;
+        }
+      }
+      
+      // Create user
+      const { rows } = await client.query(
+        `INSERT INTO users (email, password_hash, name, role, referrer_id, referral_code)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING id, email, name, role, referrer_id, referral_code, tier, is_active, email_verified, created_at, updated_at`,
+        [input.email, password_hash, input.name, input.role || 'affiliate', referrer_id, referral_code]
+      );
+      
+      const user = rows[0];
+      
+      // Create default affiliate link for new affiliates
+      if (user.role === 'affiliate') {
+        await client.query(
+          `INSERT INTO affiliate_links (affiliate_id, link_code)
+           VALUES ($1, $2)`,
+          [user.id, referral_code]
+        );
+        
+        // Give signup bonus
+        await client.query(
+          `INSERT INTO bonuses (affiliate_id, type, description, amount)
+           VALUES ($1, 'signup', 'Welcome bonus for joining as affiliate', 10.00)`,
+          [user.id]
+        );
+      }
+      
+      await client.query('COMMIT');
+      
+      return user;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+  
+  static async findByEmail(email: string): Promise<User | null> {
+    const { rows } = await pool.query(
+      `SELECT id, email, password_hash, name, role, referrer_id, referral_code, tier, is_active, email_verified, created_at, updated_at
+       FROM users WHERE email = $1`,
+      [email]
+    );
+    
+    return rows[0] || null;
+  }
+  
+  static async findById(id: string): Promise<User | null> {
+    const { rows } = await pool.query(
+      `SELECT id, email, name, role, referrer_id, referral_code, tier, is_active, email_verified, created_at, updated_at
+       FROM users WHERE id = $1`,
+      [id]
+    );
+    
+    return rows[0] || null;
+  }
+  
+  static async findByReferralCode(referral_code: string): Promise<User | null> {
+    const { rows } = await pool.query(
+      `SELECT id, email, name, role, referrer_id, referral_code, tier, is_active, email_verified, created_at, updated_at
+       FROM users WHERE referral_code = $1 AND is_active = true`,
+      [referral_code]
+    );
+    
+    return rows[0] || null;
+  }
+  
+  static async verifyPassword(email: string, password: string): Promise<User | null> {
+    const { rows } = await pool.query(
+      'SELECT * FROM users WHERE email = $1 AND is_active = true',
+      [email]
+    );
+    
+    if (rows.length === 0) {
+      return null;
+    }
+    
+    const user = rows[0];
+    const isValidPassword = await bcrypt.compare(password, user.password_hash);
+    
+    if (!isValidPassword) {
+      return null;
+    }
+    
+    // Remove password from returned object
+    const { password_hash, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+  }
+  
+  static async getReferralTree(userId: string, levels: number = 3): Promise<any> {
+    const client = await pool.connect();
+    
+    try {
+      // Get direct referrals (Level 1)
+      const level1Query = `
+        SELECT id, name, email, created_at, tier,
+               (SELECT COUNT(*) FROM transactions t 
+                JOIN affiliate_links al ON t.affiliate_link_id = al.id 
+                WHERE al.affiliate_id = users.id) as total_sales
+        FROM users 
+        WHERE referrer_id = $1 AND is_active = true
+      `;
+      const { rows: level1 } = await client.query(level1Query, [userId]);
+      
+      // Get Level 2 referrals using individual queries to avoid ANY() issues
+      let level2: any[] = [];
+      if (levels >= 2 && level1.length > 0) {
+        const level1Ids = level1.map(u => u.id).filter(id => id);
+        if (level1Ids.length > 0) {
+          // Use individual queries instead of ANY() to avoid PostgreSQL issues
+          const level2Promises = level1Ids.map(id => 
+            client.query(level1Query, [id])
+          );
+          const level2Results = await Promise.all(level2Promises);
+          level2 = level2Results.flatMap(result => result.rows);
+        }
+      }
+      
+      // Get Level 3 referrals using individual queries to avoid ANY() issues
+      let level3: any[] = [];
+      if (levels >= 3 && level2.length > 0) {
+        const level2Ids = level2.map(u => u.id).filter(id => id);
+        if (level2Ids.length > 0) {
+          // Use individual queries instead of ANY() to avoid PostgreSQL issues
+          const level3Promises = level2Ids.map(id => 
+            client.query(level1Query, [id])
+          );
+          const level3Results = await Promise.all(level3Promises);
+          level3 = level3Results.flatMap(result => result.rows);
+        }
+      }
+      
+      return {
+        level1: level1,
+        level2: level2,
+        level3: level3,
+        totals: {
+          level1: level1.length,
+          level2: level2.length,
+          level3: level3.length,
+          total: level1.length + level2.length + level3.length
+        }
+      };
+    } catch (error) {
+      console.error('Error in getReferralTree:', error);
+      // Return empty results on error
+      return {
+        level1: [],
+        level2: [],
+        level3: [],
+        totals: {
+          level1: 0,
+          level2: 0,
+          level3: 0,
+          total: 0
+        }
+      };
+    } finally {
+      client.release();
+    }
+  }
+  
+  static async updateTier(userId: string, tier: User['tier']): Promise<void> {
+    await pool.query(
+      'UPDATE users SET tier = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      [tier, userId]
+    );
+  }
+  
+  static async updateProfile(userId: string, updates: { name?: string; email?: string }): Promise<User> {
+    const setClause = Object.keys(updates)
+      .map((key, index) => `${key} = $${index + 2}`)
+      .join(', ');
+    
+    const values = Object.values(updates);
+    
+    const { rows } = await pool.query(
+      `UPDATE users SET ${setClause}, updated_at = CURRENT_TIMESTAMP 
+       WHERE id = $1 RETURNING id, email, name, role, referrer_id, referral_code, tier, is_active, email_verified, created_at, updated_at`,
+      [userId, ...values]
+    );
+    
+    return rows[0];
+  }
+  
+  static async updatePassword(userId: string, newPassword: string): Promise<void> {
+    const password_hash = await bcrypt.hash(newPassword, 12);
+    await pool.query(
+      'UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      [password_hash, userId]
+    );
+  }
+
+  static async updateStatus(userId: string, isActive: boolean): Promise<void> {
+    await pool.query(
+      'UPDATE users SET is_active = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      [isActive, userId]
+    );
+  }
+
+  static async deleteUser(userId: string): Promise<void> {
+    await pool.query('DELETE FROM users WHERE id = $1', [userId]);
+  }
+  
+  private static generateReferralCode(): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < 8; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  }
+  
+  static async getAllAffiliates(page: number = 1, limit: number = 20): Promise<{
+    affiliates: any[];
+    total: number;
+    totalPages: number;
+  }> {
+    const offset = (page - 1) * limit;
+    
+    const [affiliatesResult, countResult] = await Promise.all([
+      pool.query(
+        `SELECT u.id, u.name, u.email, u.tier, u.created_at, u.is_active, u.referral_code,
+                (SELECT COUNT(*) FROM users WHERE referrer_id = u.id) as direct_referrals,
+                (SELECT COALESCE(SUM(amount), 0) FROM commissions WHERE affiliate_id = u.id AND status = 'paid') as total_earnings,
+                (SELECT COALESCE(SUM(amount), 0) FROM commissions WHERE affiliate_id = u.id AND status = 'pending') as pending_earnings
+         FROM users u
+         WHERE u.role = 'affiliate'
+         ORDER BY u.created_at DESC
+         LIMIT $1 OFFSET $2`,
+        [limit, offset]
+      ),
+      pool.query('SELECT COUNT(*) FROM users WHERE role = \'affiliate\'')
+    ]);
+    
+    // Transform the data to match frontend expectations
+    const transformedAffiliates = affiliatesResult.rows.map(row => ({
+      id: row.id,
+      userId: row.id,
+      referralCode: row.referral_code,
+      tier: row.tier ? { name: row.tier } : { name: 'Bronze' },
+      totalEarnings: parseFloat(row.total_earnings || 0),
+      pendingEarnings: parseFloat(row.pending_earnings || 0),
+      totalReferrals: parseInt(row.direct_referrals || 0),
+      activeReferrals: parseInt(row.direct_referrals || 0),
+      conversionRate: 0, // Calculate this if needed
+      createdAt: row.created_at,
+      user: {
+        id: row.id,
+        name: row.name,
+        email: row.email,
+        role: 'affiliate',
+        status: row.is_active ? 'active' : 'inactive',
+        createdAt: row.created_at
+      }
+    }));
+    
+    return {
+      affiliates: transformedAffiliates,
+      total: parseInt(countResult.rows[0].count),
+      totalPages: Math.ceil(parseInt(countResult.rows[0].count) / limit)
+    };
+  }
+}

@@ -1,0 +1,159 @@
+sequenceDiagram
+    participant U as User
+    participant AC as AffiliateController
+    participant AS as AffiliateService
+    participant A as Affiliate
+    participant RKG as ReferralKeyGenerator
+    participant CS as CommissionService
+    participant LS as LeadService
+    participant OC as OdooClient
+    participant S as Sale
+    participant CT as CommissionTransaction
+    participant EL as EmailLead
+    participant Q as Queue
+    participant DB as Database
+
+    %% Affiliate Registration Flow
+    Note over U,DB: Affiliate Registration Process
+    U->>AC: POST /register (name, email, password)
+    AC->>AS: createAffiliate(userData)
+    AS->>RKG: generate()
+    RKG-->>AS: unique referral key
+    AS->>A: create(user_id, referral_key)
+    A->>DB: save affiliate record
+    DB-->>A: affiliate created
+    A-->>AS: affiliate instance
+    AS->>Q: SendWelcomeEmail job
+    AS-->>AC: success response
+    AC-->>U: registration complete
+
+    %% Referral Link Visit Flow
+    Note over U,DB: Referral Link Processing
+    U->>AC: GET /?ref=ABC123
+    AC->>AS: processReferral(referralKey)
+    AS->>A: findByReferralKey(ABC123)
+    A->>DB: query affiliate
+    DB-->>A: affiliate data
+    A-->>AS: affiliate found
+    AS->>AC: setCookie(ref_key, timestamp)
+    AC-->>U: landing page with cookie
+
+    %% Odoo Invoice Webhook Processing
+    Note over U,DB: Invoice Processing & Commission Calculation
+    OC->>AC: POST /api/integrations/odoo/webhook
+    AC->>OC: verifySignature(payload)
+    OC-->>AC: signature valid
+    AC->>CS: processInvoice(invoiceData)
+    CS->>A: findByReferralKey(invoice.affiliate_key)
+    A->>DB: query affiliate
+    DB-->>A: affiliate data
+    A-->>CS: L1 affiliate
+    CS->>A: getReferrer() for L2
+    A->>DB: query referrer
+    DB-->>A: L2 affiliate
+    A-->>CS: L2 affiliate
+    CS->>A: getReferrer() for L3
+    A->>DB: query referrer  
+    DB-->>A: L3 affiliate
+    A-->>CS: L3 affiliate
+    CS->>S: create(invoice_data, affiliate_id)
+    S->>DB: save sale record
+    DB-->>S: sale created
+    S-->>CS: sale instance
+    CS->>CS: calculateCommissions(sale, [L1,L2,L3])
+    loop For each level (L1, L2, L3)
+        CS->>CT: create(affiliate_id, sale_id, level, amount)
+        CT->>DB: save commission transaction
+        DB-->>CT: transaction saved
+        CT-->>CS: commission created
+    end
+    CS-->>AC: processing complete
+    AC-->>OC: 200 OK
+
+    %% Email Lead Capture Flow
+    Note over U,DB: Lead Capture Process
+    U->>AC: POST /api/leads (email, name, phone, consent)
+    AC->>LS: inviteLead(affiliateId, leadData)
+    LS->>EL: create(affiliate_id, email, name, phone)
+    EL->>DB: save lead record
+    DB-->>EL: lead created
+    EL-->>LS: lead instance
+    LS->>Q: SendLeadInviteEmail job
+    LS-->>AC: lead created
+    AC-->>U: invitation sent
+
+    %% Lead Confirmation Flow
+    Note over U,DB: Lead Opt-in Confirmation
+    U->>AC: GET /confirm-lead?token=xyz
+    AC->>LS: confirmLead(token)
+    LS->>EL: findByToken(token)
+    EL->>DB: query lead
+    DB-->>EL: lead data
+    EL-->>LS: lead found
+    LS->>EL: update(status=confirmed, opt_in_at=now)
+    EL->>DB: update lead status
+    DB-->>EL: lead updated
+    EL-->>LS: confirmation complete
+    LS-->>AC: lead confirmed
+    AC-->>U: confirmation success page
+
+    %% Lead to Sale Attribution Flow  
+    Note over U,DB: Lead Conversion Attribution
+    CS->>LS: matchLeadToInvoice(customerEmail)
+    LS->>EL: findActiveLeadByEmail(email)
+    EL->>DB: query active lead within attribution window
+    DB-->>EL: matching lead
+    EL-->>LS: lead found
+    LS->>A: findById(lead.affiliate_id)
+    A->>DB: query affiliate
+    DB-->>A: affiliate data
+    A-->>LS: affiliate instance
+    LS-->>CS: attributed affiliate
+
+    %% Admin Commission Payout Flow
+    Note over U,DB: Commission Payout Process
+    U->>AC: POST /admin/commissions/mark-paid
+    AC->>AS: markCommissionsPaid(transactionIds)
+    loop For each transaction
+        AS->>CT: findById(transactionId)
+        CT->>DB: query transaction
+        DB-->>CT: transaction data
+        CT-->>AS: transaction instance
+        AS->>CT: update(status=paid, paid_at=now)
+        CT->>DB: update transaction
+        DB-->>CT: transaction updated
+        CT-->>AS: payout recorded
+        AS->>Q: SendPayoutNotification job
+    end
+    AS-->>AC: payouts processed
+    AC-->>U: success response
+
+    %% Monthly Tier Evaluation Flow
+    Note over U,DB: Tier Evaluation Process
+    Q->>AS: MonthlyTierEvaluation job
+    AS->>A: getAllActiveAffiliates()
+    A->>DB: query active affiliates
+    DB-->>A: affiliate list
+    A-->>AS: affiliates collection
+    loop For each affiliate
+        AS->>AS: calculateMonthlyStats(affiliate, period)
+        AS->>AS: evaluateTier(stats)
+        AS->>AS: calculateBonus(tier, stats)
+        AS->>DB: save monthly stats and bonus
+        DB-->>AS: stats saved
+    end
+    AS-->>Q: evaluation complete
+
+    %% Dashboard Data Loading Flow
+    Note over U,DB: Dashboard Analytics Loading
+    U->>AC: GET /dashboard
+    AC->>AS: getDashboardData(affiliateId)
+    AS->>A: findById(affiliateId)
+    A->>DB: query affiliate with relationships
+    DB-->>A: affiliate data with sales, commissions
+    A-->>AS: affiliate instance
+    AS->>AS: calculateTotals(affiliate)
+    AS->>AS: getChartData(affiliate, period)
+    AS->>AS: getReferralTree(affiliate)
+    AS-->>AC: dashboard data
+    AC-->>U: dashboard view with analytics
