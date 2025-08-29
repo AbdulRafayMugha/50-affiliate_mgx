@@ -5,6 +5,7 @@ import Sidebar from './layout/Sidebar';
 import AdminDashboard from './dashboard/AdminDashboard';
 import AffiliateDashboard from './dashboard/AffiliateDashboard';
 import AffiliatesManagement from './admin/AffiliatesManagement';
+import CommissionManagement from './admin/CommissionManagement';
 import AnalyticsTabs from './analytics/AnalyticsTabs';
 
 const MainApp = () => {
@@ -23,7 +24,7 @@ const MainApp = () => {
         case 'sales':
           return <div className="p-6">Sales Management (Coming Soon)</div>;
         case 'commissions':
-          return <div className="p-6">Commission Management (Coming Soon)</div>;
+          return <CommissionManagement />;
         case 'payouts':
           return <div className="p-6">Payout Management (Coming Soon)</div>;
         case 'analytics':
