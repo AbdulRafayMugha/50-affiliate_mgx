@@ -177,8 +177,14 @@ export class TransactionModel {
     totalTransactions: number;
     totalCommissionsPaid: number;
     pendingCommissions: number;
+    totalAffiliates: number;
+    activeAffiliates: number;
+    conversionRate: number;
+    revenueGrowth: number;
+    newSignupsToday: number;
   }> {
-    const { rows } = await pool.query(`
+    // Get main transaction and commission stats
+    const mainStats = await pool.query(`
       SELECT 
         COALESCE(SUM(t.amount), 0) as total_revenue,
         COUNT(t.id) as total_transactions,
@@ -188,12 +194,66 @@ export class TransactionModel {
       LEFT JOIN commissions c ON t.id = c.transaction_id
       WHERE t.status = 'completed'
     `);
+
+    // Get affiliate counts
+    const affiliateCounts = await pool.query(`
+      SELECT 
+        COUNT(*) as total_affiliates,
+        COUNT(CASE WHEN is_active = true THEN 1 END) as active_affiliates
+      FROM users
+      WHERE role = 'affiliate'
+    `);
+
+    // Get new signups today
+    const newSignups = await pool.query(`
+      SELECT COUNT(*) as new_signups
+      FROM users
+      WHERE role = 'affiliate'
+      AND DATE(created_at) = CURRENT_DATE
+    `);
+
+    // Get revenue for current and previous month for growth calculation
+    const revenueGrowth = await pool.query(`
+      SELECT 
+        COALESCE(SUM(CASE 
+          WHEN DATE_TRUNC('month', created_at) = DATE_TRUNC('month', CURRENT_DATE)
+          THEN amount ELSE 0 END), 0) as current_month_revenue,
+        COALESCE(SUM(CASE 
+          WHEN DATE_TRUNC('month', created_at) = DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')
+          THEN amount ELSE 0 END), 0) as last_month_revenue
+      FROM transactions
+      WHERE status = 'completed'
+      AND created_at >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')
+    `);
+
+    const currentMonthRevenue = parseFloat(revenueGrowth.rows[0].current_month_revenue);
+    const lastMonthRevenue = parseFloat(revenueGrowth.rows[0].last_month_revenue);
+    const growthRate = lastMonthRevenue > 0 
+      ? ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100 
+      : 0;
     
+    // Calculate conversion rate: (total completed transactions / total affiliate links clicked) * 100
+    const conversionStats = await pool.query(`
+      SELECT 
+        CASE 
+          WHEN SUM(clicks) > 0 
+          THEN (COUNT(DISTINCT t.id)::float / SUM(clicks)) * 100
+          ELSE 0
+        END as conversion_rate
+      FROM affiliate_links al
+      LEFT JOIN transactions t ON t.affiliate_link_id = al.id AND t.status = 'completed'
+    `);
+
     return {
-      totalRevenue: parseFloat(rows[0].total_revenue || '0'),
-      totalTransactions: parseInt(rows[0].total_transactions || '0'),
-      totalCommissionsPaid: parseFloat(rows[0].total_commissions_paid || '0'),
-      pendingCommissions: parseFloat(rows[0].pending_commissions || '0')
+      totalRevenue: parseFloat(mainStats.rows[0].total_revenue || '0'),
+      totalTransactions: parseInt(mainStats.rows[0].total_transactions || '0'),
+      totalCommissionsPaid: parseFloat(mainStats.rows[0].total_commissions_paid || '0'),
+      pendingCommissions: parseFloat(mainStats.rows[0].pending_commissions || '0'),
+      totalAffiliates: parseInt(affiliateCounts.rows[0].total_affiliates || '0'),
+      activeAffiliates: parseInt(affiliateCounts.rows[0].active_affiliates || '0'),
+      conversionRate: parseFloat(conversionStats.rows[0].conversion_rate || '0'),
+      revenueGrowth: parseFloat(growthRate.toFixed(2)),
+      newSignupsToday: parseInt(newSignups.rows[0].new_signups || '0')
     };
   }
 }

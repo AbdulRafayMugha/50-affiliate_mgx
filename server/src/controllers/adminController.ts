@@ -26,6 +26,12 @@ export const getDashboard = asyncHandler(async (req: AuthRequest, res: Response)
   });
 });
 
+export const getTopAffiliates = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const limit = parseInt(req.query.limit as string) || 5;
+  const topAffiliates = await UserModel.getTopAffiliates(limit);
+  res.json(topAffiliates);
+});
+
 export const getAffiliates = asyncHandler(async (req: AuthRequest, res: Response) => {
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 20;

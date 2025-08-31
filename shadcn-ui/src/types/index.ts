@@ -119,6 +119,15 @@ export interface DashboardStats {
   conversionRate: number;
   revenueGrowth: number;
   newSignupsToday: number;
+  revenueGenerated: number;
+  commissionTrends?: {
+    date: string;
+    amount: number;
+  }[];
+  conversionTrends?: {
+    date: string;
+    rate: number;
+  }[];
 }
 
 export interface AffiliateStats {
@@ -152,13 +161,21 @@ export interface ChartData {
 }
 
 export interface AnalyticsData {
-  registrations: ChartData;
-  commissions: ChartData;
-  sales: ChartData;
+  registrations?: ChartData;
+  commissions?: ChartData;
+  sales?: ChartData;
+  commissionTrends?: {
+    date: string;
+    amount: number;
+  }[];
+  conversionTrends?: {
+    date: string;
+    rate: number;
+  }[];
   topAffiliates: {
     affiliate: Affiliate;
     earnings: number;
-    referrals: number;
+    conversionRate: number;
   }[];
 }
 

@@ -26,6 +26,79 @@ export interface CreateUserInput {
 }
 
 export class UserModel {
+  static async getTopAffiliates(limit: number = 5): Promise<any[]> {
+    const { rows } = await pool.query(`
+      SELECT 
+        u.id,
+        u.name,
+        u.email,
+        u.referral_code,
+        u.tier,
+        u.is_active,
+        COALESCE(
+          (SELECT SUM(c.amount::numeric)
+           FROM commissions c 
+           WHERE c.affiliate_id = u.id), 
+          0
+        ) as total_earnings,
+        COALESCE(
+          (SELECT SUM(c.amount::numeric)
+           FROM commissions c 
+           WHERE c.affiliate_id = u.id 
+           AND c.status IN ('pending', 'approved')), 
+          0
+        ) as pending_earnings,
+        COALESCE(
+          (SELECT COUNT(DISTINCT t.id)
+           FROM transactions t 
+           WHERE t.referrer_id = u.id), 
+          0
+        ) as total_referrals,
+        COALESCE(
+          (SELECT COUNT(DISTINCT t.id)
+           FROM transactions t 
+           WHERE t.referrer_id = u.id
+           AND t.status = 'completed'),
+          0
+        ) as active_referrals,
+        CASE 
+          WHEN (SELECT COUNT(*) FROM affiliate_links al WHERE al.affiliate_id = u.id AND al.clicks > 0) > 0
+          THEN ROUND(
+            (COALESCE(
+              (SELECT COUNT(DISTINCT t.id)
+               FROM transactions t 
+               WHERE t.referrer_id = u.id 
+               AND t.status = 'completed'), 
+              0
+            )::numeric / 
+            NULLIF((SELECT SUM(clicks) FROM affiliate_links al WHERE al.affiliate_id = u.id), 0)::numeric * 100
+          ), 2)
+          ELSE 0
+        END as conversion_rate
+      FROM users u
+      WHERE u.role = 'affiliate'
+      ORDER BY total_earnings DESC
+      LIMIT $1
+    `, [limit]);
+
+    return rows.map(row => ({
+      id: row.id,
+      user: {
+        name: row.name,
+        email: row.email
+      },
+      referralCode: row.referral_code,
+      tier: {
+        name: row.tier
+      },
+      totalEarnings: parseFloat(row.total_earnings),
+      pendingEarnings: parseFloat(row.pending_earnings),
+      totalReferrals: parseInt(row.total_referrals),
+      activeReferrals: parseInt(row.active_referrals),
+      conversionRate: parseFloat(row.conversion_rate)
+    }));
+  }
+
   static async create(input: CreateUserInput): Promise<User> {
     const client = await pool.connect();
     

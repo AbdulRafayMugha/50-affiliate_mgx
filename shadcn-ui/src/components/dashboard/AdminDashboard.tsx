@@ -37,18 +37,48 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
   useEffect(() => {
     const loadDashboardData = async () => {
       try {
-        const [statsData, analyticsData, affiliatesData, commissionsData] = await Promise.all([
-          DataService.getDashboardStats(),
-          DataService.getAnalyticsData(),
-          DataService.getAffiliateStats(''),
-          DataService.getCommissions('')
+        const [{ data: dashboardData }, topAffiliatesData] = await Promise.all([
+          adminAPI.getDashboard(),
+          adminAPI.getTopAffiliates(5)
         ]);
 
-        setStats(statsData);
-        setAnalytics(analyticsData);
-        // setTopAffiliates(affiliatesData.slice(0, 5));
-        setTopAffiliates(analyticsData.topAffiliates.map(a => a.affiliate).slice(0, 5));
-        setPendingCommissions(commissionsData.filter(c => c.status === 'pending'));
+        // Log the raw data to see what we're getting
+        console.log('Dashboard Data:', dashboardData);
+
+        // Parse numerical values and handle edge cases
+        const stats = dashboardData.stats;
+        setStats({
+          totalAffiliates: Number(stats.totalAffiliates) || 0,
+          activeAffiliates: Number(stats.activeAffiliates) || 0,
+          totalSales: Number(stats.totalRevenue) || 0, // Changed from totalSales to totalRevenue
+          totalCommissions: Number(stats.totalCommissionsPaid) || 0,
+          pendingPayouts: Number(stats.pendingCommissions) || 0, // Changed from pendingPayouts to pendingCommissions
+          conversionRate: Number(stats.conversionRate) || 0,
+          revenueGrowth: Number(stats.revenueGrowth) || 0,
+          newSignupsToday: Number(stats.newSignupsToday) || 0,
+          revenueGenerated: Number(stats.totalRevenue) || 0, // Using totalRevenue here as well
+          commissionTrends: stats.commissionTrends || [],
+          conversionTrends: stats.conversionTrends || []
+        });
+
+        setAnalytics({
+          commissionTrends: dashboardData.stats.commissionTrends || [],
+          conversionTrends: dashboardData.stats.conversionTrends || [],
+          topAffiliates: topAffiliatesData.data.map(a => ({
+            affiliate: a,
+            earnings: a.totalEarnings,
+            conversionRate: a.conversionRate
+          }))
+        });
+        
+        setTopAffiliates(topAffiliatesData.data);
+        // Ensure commission amounts are parsed as numbers
+        setPendingCommissions(
+          (dashboardData.pendingCommissions || []).map(commission => ({
+            ...commission,
+            amount: typeof commission.amount === 'string' ? parseFloat(commission.amount) : commission.amount
+          }))
+        );
       } catch (error) {
         console.error('Error loading dashboard data:', error);
       } finally {
@@ -167,13 +197,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="Total Affiliates"
-          value={stats.totalAffiliates}
+          value={stats.totalAffiliates.toString()}
           change="+12% from last month"
           icon={Users}
         />
         <StatCard
           title="Active Affiliates"
-          value={stats.activeAffiliates}
+          value={stats.activeAffiliates.toString()}
           change="+8% from last month"
           icon={UserCheck}
         />
@@ -256,7 +286,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
               <CreditCard className="w-4 h-4 mr-2" />
               Process Payouts
             </Button>
-            <Button className="w-full justify-start" variant="outline">
+            <Button 
+              className="w-full justify-start" 
+              variant="outline"
+              onClick={() => onNavigate?.('analytics')}
+            >
               <TrendingUp className="w-4 h-4 mr-2" />
               View Analytics
             </Button>
@@ -298,7 +332,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
                       </div>
                     </div>
                     <div className="flex items-center space-x-3">
-                      <p className="font-semibold">${commission.amount.toFixed(2)}</p>
+                      <p className="font-semibold">${typeof commission.amount === 'number' ? commission.amount.toFixed(2) : '0.00'}</p>
                       <div className="flex space-x-1">
                         <Button size="sm" variant="outline">
                           <CheckCircle className="w-4 h-4" />
