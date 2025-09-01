@@ -107,6 +107,7 @@ export const transactionAPI = {
 // Admin API
 export const adminAPI = {
   getDashboard: () => api.get('/admin/dashboard'),
+  getTopAffiliates: (limit?: number) => api.get('/admin/top-affiliates', { params: { limit } }),
   
   getAffiliates: (page?: number, limit?: number) =>
     api.get('/admin/affiliates', { params: { page, limit } }),

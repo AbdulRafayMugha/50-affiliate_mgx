@@ -15,7 +15,8 @@ import {
   deleteAffiliate,
   getAffiliateEmailReferrals,
   getAffiliateEmailStats,
-  exportAffiliateReport
+  exportAffiliateReport,
+  getTopAffiliates
 } from '../controllers/adminController';
 import { authenticateToken, requireAdmin } from '../middleware/auth';
 
@@ -25,6 +26,7 @@ const router = Router();
 router.use(authenticateToken, requireAdmin);
 
 router.get('/dashboard', getDashboard);
+router.get('/top-affiliates', getTopAffiliates);
 router.get('/affiliates', getAffiliates);
 router.get('/affiliates/:affiliateId', getAffiliateDetails);
 router.get('/affiliates/:affiliateId/bank-details', getAffiliateBankDetails);

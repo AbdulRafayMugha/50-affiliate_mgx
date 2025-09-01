@@ -23,6 +23,7 @@ import CommissionAnalytics from './CommissionAnalytics';
 import ConversionAnalytics from './ConversionAnalytics';
 import AffiliatesList from './AffiliatesList';
 import { DataService } from '../../services/mockData';
+import { adminAPI } from '../../services/api';
 
 interface AnalyticsTabsProps {
   onNavigate?: (page: string) => void;
@@ -32,17 +33,39 @@ const AnalyticsTabs: React.FC<AnalyticsTabsProps> = ({ onNavigate }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [timeRange, setTimeRange] = useState('30d');
   const [allAffiliates, setAllAffiliates] = useState<any[]>([]);
+  const [stats, setStats] = useState({
+    totalRevenue: 0,
+    activeAffiliates: 0,
+    totalAffiliates: 0,
+    conversionRate: 0,
+    pendingPayouts: 0,
+    pendingTransactions: 0
+  });
 
   useEffect(() => {
-    const loadAffiliateData = async () => {
+    const loadData = async () => {
       try {
-        const affiliatesData = await DataService.getAllAffiliates();
+        const [{ data: dashboardData }, affiliatesData] = await Promise.all([
+          adminAPI.getDashboard(),
+          DataService.getAllAffiliates()
+        ]);
+
         setAllAffiliates(affiliatesData);
+        
+        // Set the stats
+        setStats({
+          totalRevenue: Number(dashboardData.stats.totalRevenue) || 0,
+          activeAffiliates: Number(dashboardData.stats.activeAffiliates) || 0,
+          totalAffiliates: Number(dashboardData.stats.totalAffiliates) || 0,
+          conversionRate: Number(dashboardData.stats.conversionRate) || 0,
+          pendingPayouts: Number(dashboardData.stats.pendingCommissions) || 0,
+          pendingTransactions: (dashboardData.pendingCommissions || []).length
+        });
       } catch (error) {
-        console.error('Error loading affiliate data:', error);
+        console.error('Error loading dashboard data:', error);
       }
     };
-    loadAffiliateData();
+    loadData();
   }, []);
 
   const tabs = [
@@ -114,10 +137,10 @@ const AnalyticsTabs: React.FC<AnalyticsTabsProps> = ({ onNavigate }) => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                <p className="text-2xl font-bold text-gray-900">$135,000</p>
+                <p className="text-2xl font-bold text-gray-900">${stats.totalRevenue.toLocaleString()}</p>
                 <p className="text-sm text-green-600 flex items-center mt-1">
                   <TrendingUp className="h-4 w-4 mr-1" />
-                  +12.5% from last month
+                  Generated this month
                 </p>
               </div>
               <DollarSign className="h-8 w-8 text-green-600" />
@@ -130,10 +153,10 @@ const AnalyticsTabs: React.FC<AnalyticsTabsProps> = ({ onNavigate }) => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Active Affiliates</p>
-                <p className="text-2xl font-bold text-gray-900">95</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.activeAffiliates}</p>
                 <p className="text-sm text-blue-600 flex items-center mt-1">
                   <Users className="h-4 w-4 mr-1" />
-                  120 total affiliates
+                  {stats.totalAffiliates} total affiliates
                 </p>
               </div>
               <Users className="h-8 w-8 text-blue-600" />
@@ -146,10 +169,10 @@ const AnalyticsTabs: React.FC<AnalyticsTabsProps> = ({ onNavigate }) => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Conversion Rate</p>
-                <p className="text-2xl font-bold text-gray-900">18.5%</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.conversionRate}%</p>
                 <p className="text-sm text-purple-600 flex items-center mt-1">
                   <Target className="h-4 w-4 mr-1" />
-                  +3.5% above average
+                  Overall performance
                 </p>
               </div>
               <Target className="h-8 w-8 text-purple-600" />
@@ -162,10 +185,10 @@ const AnalyticsTabs: React.FC<AnalyticsTabsProps> = ({ onNavigate }) => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Pending Payouts</p>
-                <p className="text-2xl font-bold text-gray-900">$15,000</p>
+                <p className="text-2xl font-bold text-gray-900">${stats.pendingPayouts.toLocaleString()}</p>
                 <p className="text-sm text-orange-600 flex items-center mt-1">
                   <Activity className="h-4 w-4 mr-1" />
-                  120 transactions
+                  {stats.pendingTransactions} transactions
                 </p>
               </div>
               <DollarSign className="h-8 w-8 text-orange-600" />

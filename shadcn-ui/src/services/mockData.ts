@@ -157,39 +157,70 @@ export class DataService {
     }
   }
 
-  //mock function for Analytics data 
+  //function for Analytics data 
 static async getAnalyticsData(): Promise<AnalyticsData> {
     try {
-      // Replace with real API call if available
-      // Example mock data:
-      return {
+      const [{ data: dashboardData }, topAffiliatesData] = await Promise.all([
+        adminAPI.getDashboard(),
+        adminAPI.getTopAffiliates(5)
+      ]);
+
+      const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+
+      // Transform the data into the required format
+      const analyticsData: AnalyticsData = {
         registrations: {
-          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-          datasets: [
-            { label: 'Registrations', data: [45, 52, 48, 65, 72, 85], backgroundColor: '#3b82f6' }
-          ]
+          labels: monthLabels,
+          datasets: [{
+            label: 'Registrations',
+            data: dashboardData.stats.registrationTrends || [],
+            backgroundColor: '#3b82f6'
+          }]
         },
         commissions: {
-          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-          datasets: [
-            { label: 'Commissions', data: [8500, 9200, 10500, 11800, 13200, 14500], backgroundColor: '#10b981' }
-          ]
+          labels: monthLabels,
+          datasets: [{
+            label: 'Commissions',
+            data: dashboardData.stats.commissionTrends?.map(ct => ct.amount) || [],
+            backgroundColor: '#10b981'
+          }]
         },
         sales: {
-          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-          datasets: [
-            { label: 'Sales', data: [85000, 92000, 105000, 118000, 132000, 145000], backgroundColor: '#f59e42' }
-          ]
+          labels: monthLabels,
+          datasets: [{
+            label: 'Sales',
+            data: dashboardData.stats.salesTrends || [],
+            backgroundColor: '#f59e42'
+          }]
         },
+        commissionTrends: dashboardData.stats.commissionTrends || [],
+        conversionTrends: dashboardData.stats.conversionTrends || [],
+        topAffiliates: topAffiliatesData.data.map(affiliate => ({
+          affiliate,
+          earnings: affiliate.totalEarnings,
+          conversionRate: affiliate.conversionRate
+        }))
+      };
+
+      return analyticsData;
+    } catch (error) {
+      console.error('Failed to fetch analytics data:', error);
+      // Return empty analytics data as fallback
+      return {
+        registrations: { labels: [], datasets: [{ label: 'Registrations', data: [], backgroundColor: '#3b82f6' }] },
+        commissions: { labels: [], datasets: [{ label: 'Commissions', data: [], backgroundColor: '#10b981' }] },
+        sales: { labels: [], datasets: [{ label: 'Sales', data: [], backgroundColor: '#f59e42' }] },
+        commissionTrends: [],
+        conversionTrends: [],
         topAffiliates: [
           {
             affiliate: {
-              id: 'aff1',
-              userId: 'user1',
-              referralCode: 'CODE1',
+              id: '1',
+              userId: '1',
+              referralCode: 'DEMO1',
               level: 1,
               tier: {
-                id: 'tier1',
+                id: '1',
                 name: 'Silver',
                 minReferrals: 5,
                 minRevenue: 1000,
@@ -197,126 +228,16 @@ static async getAnalyticsData(): Promise<AnalyticsData> {
                 bonusAmount: 50,
                 benefits: ['Priority Support']
               },
-              totalEarnings: 1200,
-              pendingEarnings: 100,
-              totalReferrals: 10,
-              activeReferrals: 8,
-              conversionRate: 20,
-              createdAt: '2024-01-01T00:00:00Z'
+              totalEarnings: 0,
+              pendingEarnings: 0,
+              totalReferrals: 0,
+              activeReferrals: 0,
+              conversionRate: 0,
+              createdAt: new Date().toISOString()
             },
-            earnings: 1200,
-            referrals: 10
-          },
-          {
-            affiliate: {
-              id: 'aff2',
-              userId: 'user2',
-              referralCode: 'CODE2',
-              level: 1,
-              tier: {
-                id: 'tier2',
-                name: 'Gold',
-                minReferrals: 10,
-                minRevenue: 2500,
-                commissionBoost: 3,
-                bonusAmount: 100,
-                benefits: ['Priority Support', 'Dedicated Manager']
-              },
-              totalEarnings: 2100,
-              pendingEarnings: 150,
-              totalReferrals: 15,
-              activeReferrals: 12,
-              conversionRate: 25,
-              createdAt: '2024-01-15T00:00:00Z'
-            },
-            earnings: 2100,
-            referrals: 15
-          },
-          {
-            affiliate: {
-              id: 'aff3',
-              userId: 'user3',
-              referralCode: 'CODE3',
-              level: 1,
-              tier: {
-                id: 'tier1',
-                name: 'Silver',
-                minReferrals: 5,
-                minRevenue: 1000,
-                commissionBoost: 2,
-                bonusAmount: 50,
-                benefits: ['Priority Support']
-              },
-              totalEarnings: 950,
-              pendingEarnings: 75,
-              totalReferrals: 8,
-              activeReferrals: 6,
-              conversionRate: 18,
-              createdAt: '2024-02-01T00:00:00Z'
-            },
-            earnings: 950,
-            referrals: 8
-          },
-          {
-            affiliate: {
-              id: 'aff4',
-              userId: 'user4',
-              referralCode: 'CODE4',
-              level: 1,
-              tier: {
-                id: 'tier3',
-                name: 'Platinum',
-                minReferrals: 20,
-                minRevenue: 5000,
-                commissionBoost: 4,
-                bonusAmount: 200,
-                benefits: ['Priority Support', 'Dedicated Manager', 'Custom Tools']
-              },
-              totalEarnings: 3200,
-              pendingEarnings: 200,
-              totalReferrals: 25,
-              activeReferrals: 22,
-              conversionRate: 30,
-              createdAt: '2024-01-10T00:00:00Z'
-            },
-            earnings: 3200,
-            referrals: 25
-          },
-          {
-            affiliate: {
-              id: 'aff5',
-              userId: 'user5',
-              referralCode: 'CODE5',
-              level: 1,
-              tier: {
-                id: 'tier1',
-                name: 'Silver',
-                minReferrals: 5,
-                minRevenue: 1000,
-                commissionBoost: 2,
-                bonusAmount: 50,
-                benefits: ['Priority Support']
-              },
-              totalEarnings: 750,
-              pendingEarnings: 50,
-              totalReferrals: 6,
-              activeReferrals: 5,
-              conversionRate: 16,
-              createdAt: '2024-02-15T00:00:00Z'
-            },
-            earnings: 750,
-            referrals: 6
-          }
-        ]
-      };
-    } catch (error) {
-      console.error('Failed to fetch analytics data:', error);
-      // Return empty mock data as fallback
-      return {
-        registrations: { labels: [], datasets: [] },
-        commissions: { labels: [], datasets: [] },
-        sales: { labels: [], datasets: [] },
-        topAffiliates: []
+            earnings: 0,
+            conversionRate: 0
+          }]
       };
     }
   }
@@ -324,21 +245,27 @@ static async getAnalyticsData(): Promise<AnalyticsData> {
   //mock function for Analytics data 
   static async getDashboardStats(): Promise<DashboardStats> {
     try {
-      // Replace with real API call if available
-      // Example mock data:
+      const response = await adminAPI.getDashboard();
+      const { stats } = response.data;
+      console.log('Raw stats from DB:', stats);
+      
+      // Map the received data to our DashboardStats interface
       return {
-        totalAffiliates: 120,
-        activeAffiliates: 95,
-        totalSales: 15000,
-        totalCommissions: 3200,
-        pendingPayouts: 450,
-        conversionRate: 18.5,
-        revenueGrowth: 12.3,
-        newSignupsToday: 7
+        totalSales: Number(stats.totalRevenue) || 0,
+        totalCommissions: Number(stats.totalCommissionsPaid) || 0,
+        pendingPayouts: Number(stats.pendingCommissions) || 0,
+        totalAffiliates: Number(stats.totalAffiliates) || 0,
+        activeAffiliates: Number(stats.activeAffiliates) || 0,
+        conversionRate: Number(stats.conversionRate) || 0,
+        revenueGrowth: Number(stats.revenueGrowth) || 0,
+        newSignupsToday: Number(stats.newSignupsToday) || 0,
+        revenueGenerated: Number(stats.totalRevenue) || 0,
+        commissionTrends: stats.commissionTrends || [],
+        conversionTrends: stats.conversionTrends || []
       };
     } catch (error) {
       console.error('Failed to fetch dashboard stats:', error);
-      // Return empty mock data as fallback
+      // Return empty stats as fallback
       return {
         totalAffiliates: 0,
         activeAffiliates: 0,
@@ -347,7 +274,10 @@ static async getAnalyticsData(): Promise<AnalyticsData> {
         pendingPayouts: 0,
         conversionRate: 0,
         revenueGrowth: 0,
-        newSignupsToday: 0
+        newSignupsToday: 0,
+        revenueGenerated: 0,
+        commissionTrends: [],
+        conversionTrends: []
       };
     }
   }
