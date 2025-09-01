@@ -82,10 +82,12 @@ export class DataService {
       return response.data.invites.map((invite: Record<string, unknown>) => ({
         id: invite.id,
         email: invite.email,
+        name: invite.name,
         status: invite.status,
-        invitedAt: invite.sent_at,
-        clickedAt: invite.clicked_at,
-        convertedAt: invite.converted_at
+        invitedAt: invite.invited_at,
+        confirmedAt: invite.confirmed_at,
+        convertedAt: invite.converted_at,
+        expiresAt: invite.expires_at
       }));
     } catch (error) {
       console.error('Failed to fetch email invites:', error);
@@ -131,9 +133,9 @@ export class DataService {
     }
   }
 
-  static async sendEmailInvite(affiliateId: string, email: string, message: string): Promise<boolean> {
+  static async sendEmailInvite(affiliateId: string, email: string, name?: string): Promise<boolean> {
     try {
-      await affiliateAPI.sendEmailInvite(email, message);
+      await affiliateAPI.sendEmailInvite(email, name);
       return true;
     } catch (error) {
       console.error('Failed to send email invite:', error);

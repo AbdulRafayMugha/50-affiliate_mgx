@@ -1,5 +1,6 @@
 import { Response } from 'express';
 export declare const getDashboard: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
+export declare const getTopAffiliates: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
 export declare const getAffiliates: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
 export declare const getTransactions: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
 export declare const getPendingCommissions: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
@@ -7,3 +8,11 @@ export declare const approveCommissions: (req: import("express").Request, res: R
 export declare const payCommissions: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
 export declare const getAffiliateDetails: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
 export declare const updateCommissionStatus: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
+export declare const getAffiliateBankDetails: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
+export declare const getAffiliateCommissions: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
+export declare const processAffiliatePayment: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
+export declare const updateAffiliateStatus: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
+export declare const deleteAffiliate: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
+export declare const getAffiliateEmailReferrals: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
+export declare const getAffiliateEmailStats: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
+export declare const exportAffiliateReport: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;

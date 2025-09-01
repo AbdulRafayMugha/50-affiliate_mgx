@@ -40,7 +40,7 @@ exports.schemas = {
     }),
     emailInvite: joi_1.default.object({
         email: joi_1.default.string().email().required(),
-        message: joi_1.default.string().max(1000).optional()
+        name: joi_1.default.string().max(100).optional()
     }),
     affiliateLink: joi_1.default.object({
         custom_code: joi_1.default.string().alphanum().min(6).max(20).optional()

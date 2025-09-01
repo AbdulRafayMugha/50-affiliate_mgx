@@ -1,5 +1,12 @@
-import { Request, Response } from "express";
-export declare const register: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
-export declare const login: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
-export declare const getProfile: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
-export declare const verifyToken: (req: Request, res: Response) => Response<any, Record<string, any>>;
+import { Request, Response } from 'express';
+export declare const register: (req: Request, res: Response, next: import("express").NextFunction) => void;
+export declare const login: (req: Request, res: Response, next: import("express").NextFunction) => void;
+export declare const getProfile: (req: Request, res: Response, next: import("express").NextFunction) => void;
+export declare const verifyToken: (req: Request, res: Response, next: import("express").NextFunction) => void;
+export declare const updateProfile: (req: Request, res: Response, next: import("express").NextFunction) => void;
+export declare const updatePassword: (req: Request, res: Response, next: import("express").NextFunction) => void;
+export declare const getBankDetails: (req: Request, res: Response, next: import("express").NextFunction) => void;
+export declare const createBankDetails: (req: Request, res: Response, next: import("express").NextFunction) => void;
+export declare const updateBankDetails: (req: Request, res: Response, next: import("express").NextFunction) => void;
+export declare const deleteBankDetails: (req: Request, res: Response, next: import("express").NextFunction) => void;
+export declare const setDefaultBankDetails: (req: Request, res: Response, next: import("express").NextFunction) => void;

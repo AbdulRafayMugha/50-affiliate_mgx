@@ -4,7 +4,7 @@ import { UserModel } from '../models/User';
 import { TransactionModel } from '../models/Transaction';
 import { CommissionModel } from '../models/Commission';
 import { BankDetailsModel } from '../models/BankDetails';
-import { EmailReferralModel } from '../models/EmailReferral';
+import { EmailInviteModel } from '../models/EmailInvite';
 import { ReportModel } from '../models/ReportModel';
 import { asyncHandler } from '../middleware/errorHandler';
 
@@ -238,7 +238,7 @@ export const getAffiliateEmailReferrals = asyncHandler(async (req: AuthRequest, 
     return res.status(404).json({ error: 'Affiliate not found' });
   }
   
-  const emailReferrals = await EmailReferralModel.getByAffiliateId(affiliateId, 100);
+  const emailReferrals = await EmailInviteModel.getByAffiliateId(affiliateId, 100);
   
   res.json(emailReferrals);
 });
@@ -252,7 +252,7 @@ export const getAffiliateEmailStats = asyncHandler(async (req: AuthRequest, res:
     return res.status(404).json({ error: 'Affiliate not found' });
   }
   
-  const emailStats = await EmailReferralModel.getStats(affiliateId);
+  const emailStats = await EmailInviteModel.getStats(affiliateId);
   
   res.json(emailStats);
 });

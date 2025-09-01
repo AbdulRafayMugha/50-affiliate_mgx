@@ -156,6 +156,40 @@ CREATE TRIGGER set_timestamp_email_referrals BEFORE UPDATE ON email_referrals FO
 CREATE INDEX IF NOT EXISTS idx_email_referrals_affiliate_id ON email_referrals(affiliate_id);
 CREATE INDEX IF NOT EXISTS idx_email_referrals_email ON email_referrals(email);
 CREATE INDEX IF NOT EXISTS idx_email_referrals_status ON email_referrals(status);
+
+-- Commission Levels Table
+CREATE TABLE IF NOT EXISTS commission_levels (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  level INTEGER NOT NULL UNIQUE CHECK (level IN (1, 2, 3)),
+  percentage DECIMAL(5,2) NOT NULL CHECK (percentage >= 0 AND percentage <= 100),
+  description TEXT NOT NULL,
+  is_active BOOLEAN DEFAULT TRUE,
+  min_referrals INTEGER DEFAULT 0,
+  max_referrals INTEGER DEFAULT 999,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+DROP TRIGGER IF EXISTS set_timestamp_commission_levels ON commission_levels;
+CREATE TRIGGER set_timestamp_commission_levels BEFORE UPDATE ON commission_levels FOR EACH ROW EXECUTE PROCEDURE trigger_set_timestamp();
+CREATE INDEX IF NOT EXISTS idx_commission_levels_level ON commission_levels(level);
+CREATE INDEX IF NOT EXISTS idx_commission_levels_active ON commission_levels(is_active);
+
+-- Commission Settings Table
+CREATE TABLE IF NOT EXISTS commission_settings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  global_commission_enabled BOOLEAN DEFAULT TRUE,
+  default_level1_commission DECIMAL(5,2) DEFAULT 15.00,
+  default_level2_commission DECIMAL(5,2) DEFAULT 5.00,
+  default_level3_commission DECIMAL(5,2) DEFAULT 2.50,
+  max_commission_levels INTEGER DEFAULT 3,
+  auto_adjust_enabled BOOLEAN DEFAULT FALSE,
+  minimum_commission DECIMAL(5,2) DEFAULT 0.00,
+  maximum_commission DECIMAL(5,2) DEFAULT 100.00,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+DROP TRIGGER IF EXISTS set_timestamp_commission_settings ON commission_settings;
+CREATE TRIGGER set_timestamp_commission_settings BEFORE UPDATE ON commission_settings FOR EACH ROW EXECUTE PROCEDURE trigger_set_timestamp();
 `;
 
 const runMigrations = async () => {

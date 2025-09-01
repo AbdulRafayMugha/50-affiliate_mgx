@@ -98,7 +98,7 @@ export class EmailReferralModel {
       updateFields.push('converted_at = CURRENT_TIMESTAMP');
       if (conversionValue) {
         updateFields.push('conversion_value = $3');
-        values.push(conversionValue);
+        values.push(conversionValue.toString());
       }
     }
     

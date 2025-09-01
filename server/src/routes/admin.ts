@@ -18,6 +18,18 @@ import {
   exportAffiliateReport,
   getTopAffiliates
 } from '../controllers/adminController';
+import {
+  getCommissionLevels,
+  getCommissionLevel,
+  createCommissionLevel,
+  updateCommissionLevel,
+  deleteCommissionLevel,
+  toggleCommissionLevel,
+  getCommissionSettings,
+  updateCommissionSettings,
+  resetToDefaults,
+  calculateCommissions
+} from '../controllers/commissionController';
 import { authenticateToken, requireAdmin } from '../middleware/auth';
 
 const router = Router();
@@ -42,5 +54,18 @@ router.get('/commissions/pending', getPendingCommissions);
 router.post('/commissions/approve', approveCommissions);
 router.post('/commissions/pay', payCommissions);
 router.patch('/commissions/:commissionId/status', updateCommissionStatus);
+
+// Commission Level Management Routes (Admin Only)
+router.post('/commission-levels', createCommissionLevel);
+router.put('/commission-levels/:id', updateCommissionLevel);
+router.delete('/commission-levels/:id', deleteCommissionLevel);
+router.patch('/commission-levels/:id/toggle', toggleCommissionLevel);
+
+// Commission Settings Routes (Admin Only)
+router.put('/commission-settings', updateCommissionSettings);
+
+// Commission Utility Routes (Admin Only)
+router.post('/commission-levels/reset', resetToDefaults);
+router.post('/commission-calculator', calculateCommissions);
 
 export { router as adminRoutes };

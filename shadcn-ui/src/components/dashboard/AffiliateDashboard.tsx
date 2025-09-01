@@ -35,7 +35,7 @@ const AffiliateDashboard = () => {
   // Email invite form
   const [emailForm, setEmailForm] = useState({
     email: '',
-    message: 'Hi! I wanted to share this amazing opportunity with you. Check it out!'
+    name: ''
   });
   const [emailSending, setEmailSending] = useState(false);
   const [emailSuccess, setEmailSuccess] = useState(false);
@@ -45,8 +45,8 @@ const AffiliateDashboard = () => {
       if (!user) return;
 
       try {
-        // Find current user's affiliate ID (in real app, this would come from API)
-        const affiliateId = '1'; // Mock affiliate ID
+        // Use the current user's ID as affiliate ID
+        const affiliateId = user.id;
         
         const [statsData, commissions, leads, bonusData] = await Promise.all([
           DataService.getAffiliateStats(affiliateId),
@@ -88,12 +88,12 @@ const AffiliateDashboard = () => {
     setEmailSuccess(false);
 
     try {
-      const success = await DataService.sendEmailInvite('1', emailForm.email, emailForm.message);
+      const success = await DataService.sendEmailInvite(user.id, emailForm.email, emailForm.name);
       if (success) {
         setEmailSuccess(true);
         setEmailForm(prev => ({ ...prev, email: '' }));
         // Refresh email leads
-        const updatedLeads = await DataService.getEmailLeads('1');
+        const updatedLeads = await DataService.getEmailLeads(user.id);
         setEmailLeads(updatedLeads);
       }
     } catch (error) {
@@ -241,13 +241,13 @@ const AffiliateDashboard = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="message">Personal Message (Optional)</Label>
-                <Textarea
-                  id="message"
-                  value={emailForm.message}
-                  onChange={(e) => setEmailForm(prev => ({ ...prev, message: e.target.value }))}
-                  rows={3}
-                  placeholder="Add a personal message..."
+                <Label htmlFor="name">Name (Optional)</Label>
+                <Input
+                  id="name"
+                  type="text"
+                  value={emailForm.name}
+                  onChange={(e) => setEmailForm(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Recipient's name..."
                 />
               </div>
               <Button type="submit" disabled={emailSending} className="w-full">

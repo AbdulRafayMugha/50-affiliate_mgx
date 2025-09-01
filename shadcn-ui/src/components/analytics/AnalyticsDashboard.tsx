@@ -31,10 +31,9 @@ import { toast } from '../../hooks/use-toast';
 
 interface AnalyticsDashboardProps {
   onNavigate?: (page: string) => void;
-  allAffiliates?: any[];
 }
 
-const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ onNavigate, allAffiliates = [] }) => {
+const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ onNavigate }) => {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -313,48 +312,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ onNavigate, all
       </Card>
 
       {/* Performance Breakdown */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Top Performing Affiliates */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Award className="h-5 w-5 mr-2" />
-              Top Performing Affiliates
-            </CardTitle>
-            <CardDescription>
-              Highest earning affiliates this period
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {allAffiliates
-                .sort((a, b) => b.totalEarnings - a.totalEarnings)
-                .slice(0, 5)
-                .map((affiliate, index) => (
-                <div key={affiliate.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-bold text-blue-600">#{index + 1}</span>
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">
-                        {affiliate.user?.name || affiliate.referralCode}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        {affiliate.totalReferrals} referrals • {affiliate.tier?.name || 'N/A'} tier
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-gray-900">${affiliate.totalEarnings?.toLocaleString() || '0'}</p>
-                    <p className="text-sm text-gray-600">{affiliate.conversionRate || 0}% conversion</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
+      <div className="grid grid-cols-1 gap-6">
         {/* Performance Metrics */}
         <Card>
           <CardHeader>

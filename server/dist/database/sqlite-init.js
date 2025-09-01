@@ -113,6 +113,53 @@ const runSQLiteMigrations = async () => {
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
     `);
+        // Commission Levels table
+        db.exec(`
+      CREATE TABLE IF NOT EXISTS commission_levels (
+        id TEXT PRIMARY KEY DEFAULT (hex(randomblob(16))),
+        level INTEGER NOT NULL UNIQUE CHECK (level IN (1, 2, 3)),
+        percentage DECIMAL(5,2) NOT NULL CHECK (percentage >= 0 AND percentage <= 100),
+        description TEXT NOT NULL,
+        is_active BOOLEAN DEFAULT 1,
+        min_referrals INTEGER DEFAULT 0,
+        max_referrals INTEGER DEFAULT 999,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+        // Commission Settings table
+        db.exec(`
+      CREATE TABLE IF NOT EXISTS commission_settings (
+        id TEXT PRIMARY KEY DEFAULT (hex(randomblob(16))),
+        global_commission_enabled BOOLEAN DEFAULT 1,
+        default_level1_commission DECIMAL(5,2) DEFAULT 15.00,
+        default_level2_commission DECIMAL(5,2) DEFAULT 5.00,
+        default_level3_commission DECIMAL(5,2) DEFAULT 2.50,
+        max_commission_levels INTEGER DEFAULT 3,
+        auto_adjust_enabled BOOLEAN DEFAULT 0,
+        minimum_commission DECIMAL(5,2) DEFAULT 0.00,
+        maximum_commission DECIMAL(5,2) DEFAULT 100.00,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+        // Email referrals table
+        db.exec(`
+      CREATE TABLE IF NOT EXISTS email_referrals (
+        id TEXT PRIMARY KEY DEFAULT (hex(randomblob(16))),
+        affiliate_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        email TEXT NOT NULL,
+        name TEXT,
+        status TEXT NOT NULL DEFAULT 'invited' CHECK (status IN ('invited', 'confirmed', 'converted', 'expired')),
+        invited_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        confirmed_at DATETIME,
+        converted_at DATETIME,
+        expires_at DATETIME NOT NULL,
+        conversion_value DECIMAL(10,2),
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
         // Create indexes for better performance
         db.exec(`
       CREATE INDEX IF NOT EXISTS idx_users_referrer_id ON users(referrer_id);
@@ -123,6 +170,11 @@ const runSQLiteMigrations = async () => {
       CREATE INDEX IF NOT EXISTS idx_commissions_transaction_id ON commissions(transaction_id);
       CREATE INDEX IF NOT EXISTS idx_email_invites_affiliate_id ON email_invites(affiliate_id);
       CREATE INDEX IF NOT EXISTS idx_bonuses_affiliate_id ON bonuses(affiliate_id);
+      CREATE INDEX IF NOT EXISTS idx_commission_levels_level ON commission_levels(level);
+      CREATE INDEX IF NOT EXISTS idx_commission_levels_active ON commission_levels(is_active);
+      CREATE INDEX IF NOT EXISTS idx_email_referrals_affiliate_id ON email_referrals(affiliate_id);
+      CREATE INDEX IF NOT EXISTS idx_email_referrals_email ON email_referrals(email);
+      CREATE INDEX IF NOT EXISTS idx_email_referrals_status ON email_referrals(status);
     `);
         console.log('✅ SQLite migrations completed successfully');
     }

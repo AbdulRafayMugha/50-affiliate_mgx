@@ -37,41 +37,41 @@ export interface CommissionCalculation {
 }
 
 export const commissionAPI = {
-  // Get all commission levels
+  // Get all commission levels (Public - all users)
   getCommissionLevels: () => 
-    api.get('/admin/commission-levels'),
+    api.get('/commission/levels'),
 
-  // Get a specific commission level
+  // Get a specific commission level (Public - all users)
   getCommissionLevel: (id: string) => 
-    api.get(`/admin/commission-levels/${id}`),
+    api.get(`/commission/levels/${id}`),
 
-  // Create a new commission level
+  // Create a new commission level (Admin only)
   createCommissionLevel: (data: Omit<CommissionLevel, 'id' | 'createdAt' | 'updatedAt'>) => 
     api.post('/admin/commission-levels', data),
 
-  // Update a commission level
+  // Update a commission level (Admin only)
   updateCommissionLevel: (id: string, data: Partial<CommissionLevel>) => 
     api.put(`/admin/commission-levels/${id}`, data),
 
-  // Delete a commission level
+  // Delete a commission level (Admin only)
   deleteCommissionLevel: (id: string) => 
     api.delete(`/admin/commission-levels/${id}`),
 
-  // Toggle commission level status
+  // Toggle commission level status (Admin only)
   toggleCommissionLevel: (id: string, isActive: boolean) => 
     api.patch(`/admin/commission-levels/${id}/toggle`, { isActive }),
 
-  // Get commission settings
+  // Get commission settings (Public - all users)
   getCommissionSettings: () => 
-    api.get('/admin/commission-settings'),
+    api.get('/commission/settings'),
 
-  // Update commission settings
+  // Update commission settings (Admin only)
   updateCommissionSettings: (data: Partial<CommissionSettings>) => 
     api.put('/admin/commission-settings', data),
 
-  // Calculate commissions
+  // Calculate commissions (Public - all users)
   calculateCommissions: (saleAmount: number, numReferrals: number = 1) => 
-    api.post('/admin/commission-calculator', { saleAmount, numReferrals }),
+    api.post('/commission/calculator', { saleAmount, numReferrals }),
 
   // Get commission statistics
   getCommissionStats: () => 

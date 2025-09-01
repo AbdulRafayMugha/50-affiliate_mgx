@@ -20,6 +20,7 @@ export interface CreateUserInput {
     referrer_code?: string;
 }
 export declare class UserModel {
+    static getTopAffiliates(limit?: number): Promise<any[]>;
     static create(input: CreateUserInput): Promise<User>;
     static findByEmail(email: string): Promise<User | null>;
     static findById(id: string): Promise<User | null>;
@@ -27,6 +28,13 @@ export declare class UserModel {
     static verifyPassword(email: string, password: string): Promise<User | null>;
     static getReferralTree(userId: string, levels?: number): Promise<any>;
     static updateTier(userId: string, tier: User['tier']): Promise<void>;
+    static updateProfile(userId: string, updates: {
+        name?: string;
+        email?: string;
+    }): Promise<User>;
+    static updatePassword(userId: string, newPassword: string): Promise<void>;
+    static updateStatus(userId: string, isActive: boolean): Promise<void>;
+    static deleteUser(userId: string): Promise<void>;
     private static generateReferralCode;
     static getAllAffiliates(page?: number, limit?: number): Promise<{
         affiliates: any[];

@@ -10,11 +10,9 @@ import {
   UserCheck, 
   CreditCard,
   AlertCircle,
-  CheckCircle,
-  Clock,
   Eye
 } from 'lucide-react';
-import { DashboardStats, AnalyticsData, Affiliate, Commission } from '../../types';
+import { DashboardStats, AnalyticsData, Affiliate } from '../../types';
 import { DataService } from '../../services/mockData';
 import AffiliateDetailsModal from '../admin/AffiliateDetailsModal';
 import { adminAPI } from '../../services/api';
@@ -28,7 +26,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [topAffiliates, setTopAffiliates] = useState<Affiliate[]>([]);
-  const [pendingCommissions, setPendingCommissions] = useState<Commission[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAffiliateId, setSelectedAffiliateId] = useState<string | null>(null);
   const [showAffiliateDetails, setShowAffiliateDetails] = useState(false);
@@ -72,13 +69,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
         });
         
         setTopAffiliates(topAffiliatesData.data);
-        // Ensure commission amounts are parsed as numbers
-        setPendingCommissions(
-          (dashboardData.pendingCommissions || []).map(commission => ({
-            ...commission,
-            amount: typeof commission.amount === 'string' ? parseFloat(commission.amount) : commission.amount
-          }))
-        );
       } catch (error) {
         console.error('Error loading dashboard data:', error);
       } finally {
@@ -216,7 +206,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
         <StatCard
           title="Pending Payouts"
           value={`$${stats.pendingPayouts.toLocaleString()}`}
-          change={`${pendingCommissions.length} transactions`}
+          change={`${stats.pendingPayouts} transactions`}
           icon={CreditCard}
         />
       </div>
@@ -301,59 +291,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
           </CardContent>
         </Card>
       </div>
-
-      {/* Pending Commissions */}
-      {pendingCommissions.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="w-5 h-5" />
-              Pending Commission Approvals
-            </CardTitle>
-            <CardDescription>
-              {pendingCommissions.length} commissions awaiting approval
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {pendingCommissions.slice(0, 5).map((commission) => {
-                const affiliate = topAffiliates.find(a => a.id === commission.affiliateId);
-                return (
-                  <div key={commission.id} className="flex items-center justify-between p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <Badge variant="outline" className="bg-yellow-100">
-                        Level {commission.level}
-                      </Badge>
-                      <div>
-                        <p className="font-medium">{affiliate?.user?.name || 'Unknown Affiliate'}</p>
-                        <p className="text-sm text-gray-500">
-                          {new Date(commission.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <p className="font-semibold">${typeof commission.amount === 'number' ? commission.amount.toFixed(2) : '0.00'}</p>
-                      <div className="flex space-x-1">
-                        <Button size="sm" variant="outline">
-                          <CheckCircle className="w-4 h-4" />
-                        </Button>
-                        <Button size="sm" variant="outline">
-                          <AlertCircle className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            {pendingCommissions.length > 5 && (
-              <div className="mt-4 text-center">
-                <Button variant="outline">View All Pending ({pendingCommissions.length})</Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
 
       {/* Performance Overview */}
       <Card>

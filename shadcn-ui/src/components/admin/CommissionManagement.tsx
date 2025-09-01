@@ -22,6 +22,8 @@ import {
 } from 'lucide-react';
 import { toast } from '../../hooks/use-toast';
 import CommissionCalculator from './CommissionCalculator';
+import { commissionAPI } from '../../services/commissionAPI';
+import { useCommission } from '../../contexts/CommissionContext';
 
 interface CommissionLevel {
   id: string;
@@ -47,41 +49,12 @@ interface CommissionSettings {
 }
 
 const CommissionManagement: React.FC = () => {
-  const [commissionLevels, setCommissionLevels] = useState<CommissionLevel[]>([
-    {
-      id: '1',
-      level: 1,
-      percentage: 15,
-      description: 'Direct referrals commission',
-      isActive: true,
-      minReferrals: 0,
-      maxReferrals: 999,
-      createdAt: '2024-01-01T00:00:00Z',
-      updatedAt: '2024-01-01T00:00:00Z'
-    },
-    {
-      id: '2',
-      level: 2,
-      percentage: 5,
-      description: 'Second level referrals commission',
-      isActive: true,
-      minReferrals: 0,
-      maxReferrals: 999,
-      createdAt: '2024-01-01T00:00:00Z',
-      updatedAt: '2024-01-01T00:00:00Z'
-    },
-    {
-      id: '3',
-      level: 3,
-      percentage: 2.5,
-      description: 'Third level referrals commission',
-      isActive: true,
-      minReferrals: 0,
-      maxReferrals: 999,
-      createdAt: '2024-01-01T00:00:00Z',
-      updatedAt: '2024-01-01T00:00:00Z'
-    }
-  ]);
+  const { 
+    commissionLevels, 
+    commissionSettings, 
+    loading: contextLoading, 
+    updateCommissionLevel: contextUpdateLevel 
+  } = useCommission();
 
   const [settings, setSettings] = useState<CommissionSettings>({
     globalCommissionEnabled: true,
@@ -119,27 +92,20 @@ const CommissionManagement: React.FC = () => {
   const handleSaveLevel = async (levelId: string) => {
     setLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setCommissionLevels(prev => 
-        prev.map(level => 
-          level.id === levelId 
-            ? { ...level, ...newLevel, updatedAt: new Date().toISOString() }
-            : level
-        )
-      );
+      // Update in backend via context (which handles both API and local state)
+      await contextUpdateLevel(levelId, newLevel);
       
       setEditingLevel(null);
       setNewLevel({});
       toast({
         title: "Success",
-        description: "Commission level updated successfully",
+        description: "Commission level updated successfully in backend and all components",
       });
     } catch (error) {
+      console.error('Error updating commission level:', error);
       toast({
         title: "Error",
-        description: "Failed to update commission level",
+        description: "Failed to update commission level in backend",
         variant: "destructive",
       });
     } finally {
@@ -255,17 +221,18 @@ const CommissionManagement: React.FC = () => {
   const handleSaveSettings = async () => {
     setLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Save settings to backend
+      await commissionAPI.updateCommissionSettings(settings);
       
       toast({
         title: "Success",
-        description: "Commission settings saved successfully",
+        description: "Commission settings saved successfully in backend",
       });
     } catch (error) {
+      console.error('Error saving commission settings:', error);
       toast({
         title: "Error",
-        description: "Failed to save commission settings",
+        description: "Failed to save commission settings in backend",
         variant: "destructive",
       });
     } finally {

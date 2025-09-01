@@ -29,5 +29,10 @@ export declare class TransactionModel {
         totalTransactions: number;
         totalCommissionsPaid: number;
         pendingCommissions: number;
+        totalAffiliates: number;
+        activeAffiliates: number;
+        conversionRate: number;
+        revenueGrowth: number;
+        newSignupsToday: number;
     }>;
 }

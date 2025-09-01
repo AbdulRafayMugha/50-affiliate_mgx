@@ -223,52 +223,75 @@ export class UserModel {
   }
   
   static async getReferralTree(userId: string, levels: number = 3): Promise<any> {
-    const client = await pool.connect();
-    
     try {
       // Get direct referrals (Level 1)
-      const level1Query = `
-        SELECT id, name, email, created_at, tier,
+      const { rows: level1 } = await pool.query(`
+        SELECT id, name, email, created_at, tier, is_active,
                (SELECT COUNT(*) FROM transactions t 
                 JOIN affiliate_links al ON t.affiliate_link_id = al.id 
-                WHERE al.affiliate_id = users.id) as total_sales
+                WHERE al.affiliate_id = users.id) as total_sales,
+               (SELECT COUNT(*) FROM users u2 WHERE u2.referrer_id = users.id) as total_referrals,
+               (SELECT COALESCE(SUM(c.amount), 0) FROM commissions c WHERE c.affiliate_id = users.id) as total_earnings
         FROM users 
         WHERE referrer_id = $1 AND is_active = true
-      `;
-      const { rows: level1 } = await client.query(level1Query, [userId]);
+      `, [userId]);
       
-      // Get Level 2 referrals using individual queries to avoid ANY() issues
+      // Get Level 2 referrals
       let level2: any[] = [];
       if (levels >= 2 && level1.length > 0) {
         const level1Ids = level1.map(u => u.id).filter(id => id);
         if (level1Ids.length > 0) {
-          // Use individual queries instead of ANY() to avoid PostgreSQL issues
-          const level2Promises = level1Ids.map(id => 
-            client.query(level1Query, [id])
-          );
-          const level2Results = await Promise.all(level2Promises);
-          level2 = level2Results.flatMap(result => result.rows);
+          const { rows: level2Rows } = await pool.query(`
+            SELECT id, name, email, created_at, tier, is_active,
+                   (SELECT COUNT(*) FROM transactions t 
+                    JOIN affiliate_links al ON t.affiliate_link_id = al.id 
+                    WHERE al.affiliate_id = users.id) as total_sales,
+                   (SELECT COUNT(*) FROM users u2 WHERE u2.referrer_id = users.id) as total_referrals,
+                   (SELECT COALESCE(SUM(c.amount), 0) FROM commissions c WHERE c.affiliate_id = users.id) as total_earnings
+            FROM users 
+            WHERE referrer_id = ANY($1) AND is_active = true
+          `, [level1Ids]);
+          level2 = level2Rows;
         }
       }
       
-      // Get Level 3 referrals using individual queries to avoid ANY() issues
+      // Get Level 3 referrals
       let level3: any[] = [];
       if (levels >= 3 && level2.length > 0) {
         const level2Ids = level2.map(u => u.id).filter(id => id);
         if (level2Ids.length > 0) {
-          // Use individual queries instead of ANY() to avoid PostgreSQL issues
-          const level3Promises = level2Ids.map(id => 
-            client.query(level1Query, [id])
-          );
-          const level3Results = await Promise.all(level3Promises);
-          level3 = level3Results.flatMap(result => result.rows);
+          const { rows: level3Rows } = await pool.query(`
+            SELECT id, name, email, created_at, tier, is_active,
+                   (SELECT COUNT(*) FROM transactions t 
+                    JOIN affiliate_links al ON t.affiliate_link_id = al.id 
+                    WHERE al.affiliate_id = users.id) as total_sales,
+                   (SELECT COUNT(*) FROM users u2 WHERE u2.referrer_id = users.id) as total_referrals,
+                   (SELECT COALESCE(SUM(c.amount), 0) FROM commissions c WHERE c.affiliate_id = users.id) as total_earnings
+            FROM users 
+            WHERE referrer_id = ANY($1) AND is_active = true
+          `, [level2Ids]);
+          level3 = level3Rows;
         }
       }
       
+      // Transform the data to match the expected format
+      const transformUser = (user: any) => ({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: 'affiliate',
+        tier: user.tier,
+        isActive: user.is_active === true,
+        createdAt: user.created_at,
+        totalEarnings: parseFloat(user.total_earnings || 0),
+        totalReferrals: parseInt(user.total_referrals || 0),
+        conversionRate: user.total_sales > 0 ? (user.total_sales / user.total_referrals * 100) : 0
+      });
+      
       return {
-        level1: level1,
-        level2: level2,
-        level3: level3,
+        level1: level1.map(transformUser),
+        level2: level2.map(transformUser),
+        level3: level3.map(transformUser),
         totals: {
           level1: level1.length,
           level2: level2.length,
@@ -290,8 +313,6 @@ export class UserModel {
           total: 0
         }
       };
-    } finally {
-      client.release();
     }
   }
   

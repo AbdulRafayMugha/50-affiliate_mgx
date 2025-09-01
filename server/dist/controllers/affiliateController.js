@@ -106,24 +106,26 @@ exports.getReferralLinks = (0, errorHandler_1.asyncHandler)(async (req, res) => 
     res.json({ links: linksWithUrls });
 });
 exports.sendEmailInvite = (0, errorHandler_1.asyncHandler)(async (req, res) => {
-    const { email, message } = req.body;
+    const { email, name } = req.body;
     // Check if email already invited
     const existingInvites = await EmailInvite_1.EmailInviteModel.getByAffiliateId(req.user.id);
     const alreadyInvited = existingInvites.some(invite => invite.email === email);
     if (alreadyInvited) {
         return res.status(409).json({ error: 'Email already invited' });
     }
-    const invite = await EmailInvite_1.EmailInviteModel.create(req.user.id, email, message);
+    const invite = await EmailInvite_1.EmailInviteModel.create(req.user.id, email, name);
     // Here you would integrate with an email service like SendGrid, Mailgun, etc.
     // For now, we'll just log it
-    console.log(`Email invite sent to ${email} from ${req.user.email}`);
+    console.log(`Email referral invite sent to ${email} from ${req.user.email}`);
     res.json({
-        message: 'Email invite sent successfully',
+        message: 'Email referral invite sent successfully',
         invite: {
             id: invite.id,
             email: invite.email,
+            name: invite.name,
             status: invite.status,
-            sent_at: invite.sent_at
+            invited_at: invite.invited_at,
+            expires_at: invite.expires_at
         }
     });
 });

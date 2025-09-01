@@ -8,7 +8,9 @@ import { authRoutes } from './routes/auth';
 import { affiliateRoutes } from './routes/affiliate';
 import { transactionRoutes } from './routes/transaction';
 import { adminRoutes } from './routes/admin';
+import { commissionRoutes } from './routes/commission';
 import { initDatabase } from './database/init';
+import seedCommissionLevels from './database/seed-commission-levels';
 
 dotenv.config();
 
@@ -40,6 +42,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/affiliate', affiliateRoutes);
 app.use('/api/transaction', transactionRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/commission', commissionRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
@@ -62,7 +65,11 @@ app.use('*', (req, res) => {
 const startServer = async () => {
   try {
     await initDatabase();
-    console.log('✅ Database initialized successfully');
+    console.log('✅ PostgreSQL database initialized successfully');
+    
+    // Seed commission levels
+    await seedCommissionLevels();
+    console.log('✅ Commission levels seeded successfully');
     
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);

@@ -13,4 +13,13 @@ router.post('/login', (0, validation_1.validate)(validation_1.schemas.login), au
 // Protected routes
 router.get('/profile', auth_1.authenticateToken, authController_1.getProfile);
 router.get('/verify', auth_1.authenticateToken, authController_1.verifyToken);
+// Profile management
+router.put('/profile', auth_1.authenticateToken, authController_1.updateProfile);
+router.put('/password', auth_1.authenticateToken, authController_1.updatePassword);
+// Bank details management
+router.get('/bank-details', auth_1.authenticateToken, authController_1.getBankDetails);
+router.post('/bank-details', auth_1.authenticateToken, authController_1.createBankDetails);
+router.put('/bank-details/:id', auth_1.authenticateToken, authController_1.updateBankDetails);
+router.delete('/bank-details/:id', auth_1.authenticateToken, authController_1.deleteBankDetails);
+router.put('/bank-details/:id/default', auth_1.authenticateToken, authController_1.setDefaultBankDetails);
 //# sourceMappingURL=auth.js.map

@@ -72,8 +72,8 @@ export const affiliateAPI = {
   
   getReferralLinks: () => api.get('/affiliate/links'),
   
-  sendEmailInvite: (email: string, message?: string) =>
-    api.post('/affiliate/email-invite', { email, message }),
+  sendEmailInvite: (email: string, name?: string) =>
+    api.post('/affiliate/email-invite', { email, name }),
   
   getEmailInvites: () => api.get('/affiliate/email-invites'),
   

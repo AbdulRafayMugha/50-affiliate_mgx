@@ -272,6 +272,6 @@ export class ReportModel {
 
     // Generate the Excel file as buffer
     const buffer = await workbook.xlsx.writeBuffer();
-    return buffer;
+    return buffer as unknown as Buffer;
   }
 }
