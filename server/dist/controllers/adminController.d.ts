@@ -16,3 +16,7 @@ export declare const deleteAffiliate: (req: import("express").Request, res: Resp
 export declare const getAffiliateEmailReferrals: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
 export declare const getAffiliateEmailStats: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
 export declare const exportAffiliateReport: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
+export declare const getCoordinators: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
+export declare const getCoordinatorNetwork: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
+export declare const updateCoordinatorStatus: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
+export declare const exportCoordinatorReport: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;

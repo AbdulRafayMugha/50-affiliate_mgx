@@ -12,6 +12,7 @@ const affiliate_1 = require("./routes/affiliate");
 const transaction_1 = require("./routes/transaction");
 const admin_1 = require("./routes/admin");
 const commission_1 = require("./routes/commission");
+const coordinator_1 = require("./routes/coordinator");
 const init_1 = require("./database/init");
 const seed_commission_levels_1 = tslib_1.__importDefault(require("./database/seed-commission-levels"));
 dotenv_1.default.config();
@@ -40,6 +41,7 @@ app.use('/api/affiliate', affiliate_1.affiliateRoutes);
 app.use('/api/transaction', transaction_1.transactionRoutes);
 app.use('/api/admin', admin_1.adminRoutes);
 app.use('/api/commission', commission_1.commissionRoutes);
+app.use('/api/coordinator', coordinator_1.coordinatorRoutes);
 // Health check
 app.get('/health', (req, res) => {
     res.json({

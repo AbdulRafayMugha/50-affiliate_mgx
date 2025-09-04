@@ -116,7 +116,8 @@ exports.updateProfile = (0, errorHandler_1.asyncHandler)(async (req, res) => {
             name: updatedUser.name,
             role: updatedUser.role,
             referral_code: updatedUser.referral_code,
-            tier: updatedUser.tier
+            tier: updatedUser.tier,
+            coordinator_id: updatedUser.coordinator_id
         }
     });
 });

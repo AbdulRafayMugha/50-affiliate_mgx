@@ -18,6 +18,7 @@ const Navbar = () => {
       case 'admin': return 'bg-red-500';
       case 'affiliate': return 'bg-blue-500';
       case 'client': return 'bg-green-500';
+      case 'coordinator': return 'bg-purple-500';
       default: return 'bg-gray-500';
     }
   };
@@ -27,6 +28,7 @@ const Navbar = () => {
       case 'admin': return Shield;
       case 'affiliate': return Users;
       case 'client': return UserIcon;
+      case 'coordinator': return Users;
       default: return UserIcon;
     }
   };
@@ -42,7 +44,7 @@ const Navbar = () => {
           </h1>
           <Badge variant="outline" className="flex items-center gap-1">
             <RoleIcon className="w-3 h-3" />
-            {user.role?.charAt(0).toUpperCase() + user.role?.slice(1)}
+            {user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'User'}
           </Badge>
         </div>
 

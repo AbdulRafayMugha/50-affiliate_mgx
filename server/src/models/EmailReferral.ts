@@ -16,31 +16,6 @@ export interface EmailReferral {
 }
 
 export class EmailReferralModel {
-  static async getByAffiliateId(affiliateId: string, limit: number = 50): Promise<EmailReferral[]> {
-    const { rows } = await pool.query(
-      `SELECT id, affiliate_id, email, 
-              CASE 
-                WHEN status = 'sent' THEN 'invited'
-                WHEN status = 'opened' THEN 'confirmed'
-                WHEN status = 'clicked' THEN 'confirmed'
-                WHEN status = 'converted' THEN 'converted'
-                ELSE 'invited'
-              END as status,
-              sent_at as invited_at,
-              clicked_at as confirmed_at,
-              converted_at,
-              (sent_at + INTERVAL '30 days') as expires_at,
-              NULL as conversion_value,
-              created_at,
-              created_at as updated_at
-       FROM email_invites 
-       WHERE affiliate_id = $1 
-       ORDER BY created_at DESC 
-       LIMIT $2`,
-      [affiliateId, limit]
-    );
-    return rows;
-  }
 
   static async getStats(affiliateId: string): Promise<{
     total: number;
@@ -77,6 +52,7 @@ export class EmailReferralModel {
     affiliate_id: string;
     email: string;
     name?: string;
+    message?: string;
     expires_at: string;
   }): Promise<EmailReferral> {
     const { rows } = await pool.query(
@@ -106,5 +82,32 @@ export class EmailReferralModel {
       `UPDATE email_referrals SET ${updateFields.join(', ')} WHERE id = $1`,
       values
     );
+  }
+
+  static async getByAffiliateId(affiliateId: string, page: number = 1, limit: number = 20): Promise<{
+    referrals: EmailReferral[];
+    total: number;
+    totalPages: number;
+  }> {
+    const offset = (page - 1) * limit;
+    
+    const [referralsResult, countResult] = await Promise.all([
+      pool.query(
+        `SELECT id, affiliate_id, email, name, status, invited_at, confirmed_at, 
+                converted_at, expires_at, conversion_value, created_at, updated_at
+         FROM email_referrals 
+         WHERE affiliate_id = $1 
+         ORDER BY created_at DESC 
+         LIMIT $2 OFFSET $3`,
+        [affiliateId, limit, offset]
+      ),
+      pool.query('SELECT COUNT(*) FROM email_referrals WHERE affiliate_id = $1', [affiliateId])
+    ]);
+    
+    return {
+      referrals: referralsResult.rows,
+      total: parseInt(countResult.rows[0].count),
+      totalPages: Math.ceil(parseInt(countResult.rows[0].count) / limit)
+    };
   }
 }

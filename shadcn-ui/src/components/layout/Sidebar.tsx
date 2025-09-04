@@ -27,7 +27,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onPageChange }) => {
     { id: 'affiliates', label: 'Affiliates', icon: Users },
     { id: 'commissions', label: 'Commissions', icon: TrendingUp },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-    { id: 'settings', label: 'Settings', icon: Settings },
+    { id: 'coordinators', label: 'Coordinators', icon: UserCheck },
   ];
 
   const affiliateMenuItems = [
@@ -35,6 +35,15 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onPageChange }) => {
     { id: 'referrals', label: 'My Referrals', icon: Users },
     { id: 'invites', label: 'Email Invites', icon: Mail },
     { id: 'bonuses', label: 'Bonuses & Rewards', icon: Gift },
+  ];
+
+  const coordinatorMenuItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'affiliates', label: 'My Affiliates', icon: Users },
+    { id: 'add-affiliate', label: 'Add Affiliate', icon: UserCheck },
+    { id: 'referrals', label: 'Referrals', icon: TrendingUp },
+    { id: 'commissions', label: 'Commissions', icon: DollarSign },
+    { id: 'invites', label: 'Email Referrals', icon: Mail },
   ];
 
   const clientMenuItems = [
@@ -47,6 +56,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onPageChange }) => {
     switch (user?.role) {
       case 'admin': return adminMenuItems;
       case 'affiliate': return affiliateMenuItems;
+      case 'coordinator': return coordinatorMenuItems;
       case 'client': return clientMenuItems;
       default: return [];
     }

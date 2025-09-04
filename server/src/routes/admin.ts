@@ -16,7 +16,11 @@ import {
   getAffiliateEmailReferrals,
   getAffiliateEmailStats,
   exportAffiliateReport,
-  getTopAffiliates
+  getTopAffiliates,
+  getCoordinators,
+  getCoordinatorNetwork,
+  updateCoordinatorStatus,
+  exportCoordinatorReport
 } from '../controllers/adminController';
 import {
   getCommissionLevels,
@@ -67,5 +71,11 @@ router.put('/commission-settings', updateCommissionSettings);
 // Commission Utility Routes (Admin Only)
 router.post('/commission-levels/reset', resetToDefaults);
 router.post('/commission-calculator', calculateCommissions);
+
+// Coordinator Management Routes (Admin Only)
+router.get('/coordinators', getCoordinators);
+router.get('/coordinators/:coordinatorId/network', getCoordinatorNetwork);
+router.patch('/coordinators/:coordinatorId/status', updateCoordinatorStatus);
+router.get('/coordinators/export-report', exportCoordinatorReport);
 
 export { router as adminRoutes };

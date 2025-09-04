@@ -98,10 +98,12 @@ class UserModel {
                     referrer_id = rows[0].id;
                 }
             }
+            // Determine coordinator_id - use provided value or created_by_coordinator
+            const coordinatorId = input.coordinator_id || input.created_by_coordinator || null;
             // Create user
-            const { rows } = await client.query(`INSERT INTO users (email, password_hash, name, role, referrer_id, referral_code)
-         VALUES ($1, $2, $3, $4, $5, $6)
-         RETURNING id, email, name, role, referrer_id, referral_code, tier, is_active, email_verified, created_at, updated_at`, [input.email, password_hash, input.name, input.role || 'affiliate', referrer_id, referral_code]);
+            const { rows } = await client.query(`INSERT INTO users (email, password_hash, name, role, referrer_id, coordinator_id, referral_code)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         RETURNING id, email, name, role, referrer_id, coordinator_id, referral_code, tier, is_active, email_verified, created_at, updated_at`, [input.email, password_hash, input.name, input.role || 'affiliate', referrer_id, coordinatorId, referral_code]);
             const user = rows[0];
             // Create default affiliate link for new affiliates
             if (user.role === 'affiliate') {
@@ -310,6 +312,134 @@ class UserModel {
             total: parseInt(countResult.rows[0].count),
             totalPages: Math.ceil(parseInt(countResult.rows[0].count) / limit)
         };
+    }
+    // Coordinator-specific methods
+    static async getAffiliatesByCoordinator(coordinatorId, page = 1, limit = 20) {
+        const offset = (page - 1) * limit;
+        const [affiliatesResult, countResult] = await Promise.all([
+            init_1.pool.query(`SELECT u.id, u.name, u.email, u.tier, u.created_at, u.is_active, u.referral_code,
+                (SELECT COUNT(*) FROM users WHERE referrer_id = u.id) as direct_referrals,
+                (SELECT COALESCE(SUM(amount), 0) FROM commissions WHERE affiliate_id = u.id AND status = 'paid') as total_earnings,
+                (SELECT COALESCE(SUM(amount), 0) FROM commissions WHERE affiliate_id = u.id AND status = 'pending') as pending_earnings
+         FROM users u
+         WHERE u.role = 'affiliate' AND u.coordinator_id = $1
+         ORDER BY u.created_at DESC
+         LIMIT $2 OFFSET $3`, [coordinatorId, limit, offset]),
+            init_1.pool.query('SELECT COUNT(*) FROM users WHERE role = \'affiliate\' AND coordinator_id = $1', [coordinatorId])
+        ]);
+        // Transform the data to match frontend expectations
+        const transformedAffiliates = affiliatesResult.rows.map(row => ({
+            id: row.id,
+            userId: row.id,
+            referralCode: row.referral_code,
+            tier: row.tier ? { name: row.tier } : { name: 'Bronze' },
+            totalEarnings: parseFloat(row.total_earnings || 0),
+            pendingEarnings: parseFloat(row.pending_earnings || 0),
+            totalReferrals: parseInt(row.direct_referrals || 0),
+            activeReferrals: parseInt(row.direct_referrals || 0),
+            conversionRate: 0, // Calculate this if needed
+            createdAt: row.created_at,
+            user: {
+                id: row.id,
+                name: row.name,
+                email: row.email,
+                role: 'affiliate',
+                status: row.is_active ? 'active' : 'inactive',
+                createdAt: row.created_at
+            }
+        }));
+        return {
+            affiliates: transformedAffiliates,
+            total: parseInt(countResult.rows[0].count),
+            totalPages: Math.ceil(parseInt(countResult.rows[0].count) / limit)
+        };
+    }
+    static async assignAffiliateToCoordinator(affiliateId, coordinatorId) {
+        await init_1.pool.query('UPDATE users SET coordinator_id = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 AND role = \'affiliate\'', [coordinatorId, affiliateId]);
+    }
+    static async removeAffiliateFromCoordinator(affiliateId) {
+        await init_1.pool.query('UPDATE users SET coordinator_id = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND role = \'affiliate\'', [affiliateId]);
+    }
+    static async getCoordinatorStats(coordinatorId) {
+        const { rows } = await init_1.pool.query(`
+      SELECT 
+        (SELECT COUNT(*) FROM users WHERE coordinator_id = $1 AND role = 'affiliate') as total_affiliates,
+        (SELECT COUNT(*) FROM users WHERE coordinator_id = $1 AND role = 'affiliate' AND is_active = true) as active_affiliates,
+        (SELECT COALESCE(SUM(amount), 0) FROM commissions c 
+         JOIN users u ON c.affiliate_id = u.id 
+         WHERE u.coordinator_id = $1 AND c.status = 'paid') as total_commissions,
+        (SELECT COALESCE(SUM(amount), 0) FROM commissions c 
+         JOIN users u ON c.affiliate_id = u.id 
+         WHERE u.coordinator_id = $1 AND c.status = 'pending') as pending_commissions,
+        (SELECT COUNT(*) FROM transactions t 
+         JOIN users u ON t.referrer_id = u.id 
+         WHERE u.coordinator_id = $1) as total_referrals
+    `, [coordinatorId]);
+        return rows[0] || {
+            total_affiliates: 0,
+            active_affiliates: 0,
+            total_commissions: 0,
+            pending_commissions: 0,
+            total_referrals: 0
+        };
+    }
+    static async getCoordinatorReferrals(coordinatorId, page = 1, limit = 20) {
+        const offset = (page - 1) * limit;
+        const [referralsResult, countResult] = await Promise.all([
+            init_1.pool.query(`SELECT t.id, t.customer_email, t.amount, t.status, t.created_at,
+                u.name as affiliate_name, u.email as affiliate_email
+         FROM transactions t
+         JOIN users u ON t.referrer_id = u.id
+         WHERE u.coordinator_id = $1
+         ORDER BY t.created_at DESC
+         LIMIT $2 OFFSET $3`, [coordinatorId, limit, offset]),
+            init_1.pool.query(`SELECT COUNT(*) FROM transactions t
+         JOIN users u ON t.referrer_id = u.id
+         WHERE u.coordinator_id = $1`, [coordinatorId])
+        ]);
+        return {
+            referrals: referralsResult.rows,
+            total: parseInt(countResult.rows[0].count),
+            totalPages: Math.ceil(parseInt(countResult.rows[0].count) / limit)
+        };
+    }
+    // Get all coordinators with their stats
+    static async getAllCoordinators() {
+        const { rows } = await init_1.pool.query(`
+      SELECT 
+        u.id,
+        u.name,
+        u.email,
+        u.is_active,
+        u.created_at,
+        COUNT(a.id) as affiliate_count,
+        COUNT(CASE WHEN a.is_active = true THEN 1 END) as active_affiliate_count,
+        0 as total_commissions,
+        COALESCE(SUM(ref_count.referral_count), 0) as total_referrals
+      FROM users u
+      LEFT JOIN users a ON a.coordinator_id = u.id AND a.role = 'affiliate'
+      LEFT JOIN (
+        SELECT 
+          referrer_id as affiliate_id,
+          COUNT(*) as referral_count
+        FROM users
+        WHERE referrer_id IS NOT NULL
+        GROUP BY referrer_id
+      ) ref_count ON ref_count.affiliate_id = a.id
+      WHERE u.role = 'coordinator'
+      GROUP BY u.id, u.name, u.email, u.is_active, u.created_at
+      ORDER BY u.created_at DESC
+    `);
+        return rows;
+    }
+    // Get referral count for a specific user
+    static async getReferralCount(userId) {
+        const { rows } = await init_1.pool.query(`
+      SELECT COUNT(*) as count
+      FROM users
+      WHERE referrer_id = $1
+    `, [userId]);
+        return parseInt(rows[0].count);
     }
 }
 exports.UserModel = UserModel;

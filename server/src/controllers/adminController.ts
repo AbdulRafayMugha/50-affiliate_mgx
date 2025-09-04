@@ -272,3 +272,93 @@ export const exportAffiliateReport = asyncHandler(async (req: AuthRequest, res: 
     res.status(500).json({ message: 'Failed to generate Excel report' });
   }
 });
+
+// Coordinator Management Endpoints
+export const getCoordinators = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const coordinators = await UserModel.getAllCoordinators();
+  res.json({ coordinators });
+});
+
+export const getCoordinatorNetwork = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { coordinatorId } = req.params;
+  
+  // Verify coordinator exists
+  const coordinator = await UserModel.findById(coordinatorId);
+  if (!coordinator || coordinator.role !== 'coordinator') {
+    return res.status(404).json({ error: 'Coordinator not found' });
+  }
+  
+  // Get coordinator's affiliates with their stats
+  const affiliatesResult = await UserModel.getAffiliatesByCoordinator(coordinatorId);
+  const affiliates = affiliatesResult.affiliates;
+  
+  // Get additional stats for each affiliate
+  const affiliatesWithStats = await Promise.all(
+    affiliates.map(async (affiliate: any) => {
+      const [commissionStats, referralCount] = await Promise.all([
+        CommissionModel.getStats(affiliate.id).catch(() => ({ total: 0, pending: 0, paid: 0 })),
+        UserModel.getReferralCount(affiliate.id).catch(() => 0)
+      ]);
+      
+      return {
+        id: affiliate.id,
+        name: affiliate.user.name,
+        email: affiliate.user.email,
+        is_active: affiliate.user.status === 'active',
+        tier: affiliate.tier.name,
+        referral_count: referralCount,
+        commission_earned: (commissionStats as any).total || 0,
+        created_at: affiliate.createdAt
+      };
+    })
+  );
+  
+  res.json({
+    coordinator: {
+      id: coordinator.id,
+      name: coordinator.name,
+      email: coordinator.email,
+      is_active: coordinator.is_active,
+      created_at: coordinator.created_at,
+      affiliate_count: affiliates.length,
+      active_affiliate_count: affiliates.filter(a => a.is_active).length,
+      total_commissions: affiliatesWithStats.reduce((sum, a) => sum + a.commission_earned, 0),
+      total_referrals: affiliatesWithStats.reduce((sum, a) => sum + a.referral_count, 0)
+    },
+    affiliates: affiliatesWithStats
+  });
+});
+
+export const updateCoordinatorStatus = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { coordinatorId } = req.params;
+  const { isActive } = req.body;
+  
+  // Verify coordinator exists
+  const coordinator = await UserModel.findById(coordinatorId);
+  if (!coordinator || coordinator.role !== 'coordinator') {
+    return res.status(404).json({ error: 'Coordinator not found' });
+  }
+  
+  await UserModel.updateStatus(coordinatorId, isActive);
+  
+  res.json({ 
+    message: `Coordinator ${isActive ? 'activated' : 'deactivated'} successfully`,
+    isActive
+  });
+});
+
+export const exportCoordinatorReport = asyncHandler(async (req: AuthRequest, res: Response) => {
+  try {
+    const buffer = await ReportModel.generateCoordinatorExcelReport();
+    
+    // Set response headers for file download
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="coordinator-report-${new Date().toISOString().split('T')[0]}.xlsx"`);
+    res.setHeader('Content-Length', buffer.length);
+    
+    res.send(buffer);
+  } catch (error) {
+    console.error('Error generating coordinator Excel report:', error);
+    res.status(500).json({ message: 'Failed to generate coordinator Excel report' });
+  }
+});

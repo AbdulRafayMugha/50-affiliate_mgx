@@ -99,7 +99,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
 
     try {
       const response = await api.put('/auth/profile', profileForm);
-      updateUser(response.data);
+      updateUser(response.data.user);
       setMessage({ type: 'success', text: 'Profile updated successfully!' });
     } catch (error: any) {
       setMessage({ 

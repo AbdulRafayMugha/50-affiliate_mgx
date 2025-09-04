@@ -1,5 +1,6 @@
 import { pool } from '../database/init';
 import * as ExcelJS from 'exceljs';
+import { UserModel } from './User';
 
 export interface AffiliateReportData {
   affiliate: {
@@ -267,6 +268,174 @@ export class ReportModel {
           bottom: { style: 'thin' },
           right: { style: 'thin' }
         };
+      });
+    });
+
+    // Generate the Excel file as buffer
+    const buffer = await workbook.xlsx.writeBuffer();
+    return buffer as unknown as Buffer;
+  }
+
+  static async generateCoordinatorExcelReport(): Promise<Buffer> {
+    const workbook = new ExcelJS.Workbook();
+    
+    // Create Summary Sheet
+    const summarySheet = workbook.addWorksheet('Summary');
+    
+    // Create Main Coordinator Report Sheet
+    const coordinatorReportSheet = workbook.addWorksheet('Coordinator Report');
+
+    // Get coordinator data
+    const coordinators = await UserModel.getAllCoordinators();
+    
+    // Summary Sheet Setup
+    summarySheet.columns = [
+      { header: 'Metric', key: 'metric', width: 25 },
+      { header: 'Value', key: 'value', width: 20 },
+      { header: 'Description', key: 'description', width: 40 }
+    ];
+
+    // Style summary header
+    const summaryHeader = summarySheet.getRow(1);
+    summaryHeader.font = { bold: true, color: { argb: 'FFFFFF' } };
+    summaryHeader.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: '366092' }
+    };
+    summaryHeader.alignment = { horizontal: 'center', vertical: 'middle' };
+
+    // Add summary data
+    const totalCoordinators = coordinators.length;
+    const activeCoordinators = coordinators.filter(c => c.is_active).length;
+    const totalAffiliates = coordinators.reduce((sum, c) => sum + parseInt(c.affiliate_count), 0);
+    const activeAffiliates = coordinators.reduce((sum, c) => sum + parseInt(c.active_affiliate_count), 0);
+    const totalCommissions = coordinators.reduce((sum, c) => sum + parseFloat(c.total_commissions), 0);
+    const totalReferrals = coordinators.reduce((sum, c) => sum + parseInt(c.total_referrals), 0);
+
+    const summaryData = [
+      { metric: 'Total Coordinators', value: totalCoordinators, description: 'Number of registered coordinators' },
+      { metric: 'Active Coordinators', value: activeCoordinators, description: 'Number of active coordinators' },
+      { metric: 'Total Affiliates', value: totalAffiliates, description: 'Total affiliates across all networks' },
+      { metric: 'Active Affiliates', value: activeAffiliates, description: 'Active affiliates across all networks' },
+      { metric: 'Total Commissions', value: `$${totalCommissions.toFixed(2)}`, description: 'Total commissions generated' },
+      { metric: 'Total Referrals', value: totalReferrals, description: 'Total referrals from all networks' },
+      { metric: 'Average Affiliates per Coordinator', value: totalCoordinators > 0 ? (totalAffiliates / totalCoordinators).toFixed(1) : '0', description: 'Average network size' },
+      { metric: 'Report Generated', value: new Date().toLocaleDateString(), description: 'Date this report was generated' }
+    ];
+
+    summaryData.forEach((item, index) => {
+      const row = summarySheet.addRow(item);
+      if (index % 2 === 1) {
+        row.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'F2F2F2' }
+        };
+      }
+      row.alignment = { horizontal: 'left', vertical: 'middle' };
+    });
+
+    // Coordinator Report Sheet Setup
+    coordinatorReportSheet.columns = [
+      { header: 'Coordinator Name', key: 'coordinator_name', width: 25 },
+      { header: 'Coordinator Email', key: 'coordinator_email', width: 30 },
+      { header: 'Coordinator Status', key: 'coordinator_status', width: 15 },
+      { header: 'Affiliate Name', key: 'affiliate_name', width: 25 },
+      { header: 'Affiliate Email', key: 'affiliate_email', width: 30 },
+      { header: 'Affiliate Status', key: 'affiliate_status', width: 15 },
+      { header: 'Affiliate Tier', key: 'affiliate_tier', width: 12 },
+      { header: 'Referral Count', key: 'referral_count', width: 15 },
+      { header: 'Commission Earned', key: 'commission_earned', width: 18 },
+      { header: 'Pending Commissions', key: 'pending_commissions', width: 18 },
+      { header: 'Joined Date', key: 'joined_date', width: 15 }
+    ];
+
+    // Style coordinator report header
+    const coordinatorReportHeader = coordinatorReportSheet.getRow(1);
+    coordinatorReportHeader.font = { bold: true, color: { argb: 'FFFFFF' } };
+    coordinatorReportHeader.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: '366092' }
+    };
+    coordinatorReportHeader.alignment = { horizontal: 'center', vertical: 'middle' };
+
+    // Add coordinator and affiliate data in table format
+    let rowIndex = 0;
+    for (const coordinator of coordinators) {
+      try {
+        const networkData = await UserModel.getAffiliatesByCoordinator(coordinator.id, 1, 1000);
+        
+        if (networkData.affiliates.length === 0) {
+          // Add row for coordinator with no affiliates
+          const row = coordinatorReportSheet.addRow({
+            coordinator_name: coordinator.name,
+            coordinator_email: coordinator.email,
+            coordinator_status: coordinator.is_active ? 'Active' : 'Inactive',
+            affiliate_name: 'No Affiliates',
+            affiliate_email: 'N/A',
+            affiliate_status: 'N/A',
+            affiliate_tier: 'N/A',
+            referral_count: 0,
+            commission_earned: '$0.00',
+            pending_commissions: '$0.00',
+            joined_date: 'N/A'
+          });
+          
+          if (rowIndex % 2 === 1) {
+            row.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: 'F2F2F2' }
+            };
+          }
+          row.alignment = { horizontal: 'center', vertical: 'middle' };
+          rowIndex++;
+        } else {
+          // Add rows for each affiliate under this coordinator
+          for (const affiliate of networkData.affiliates) {
+            const row = coordinatorReportSheet.addRow({
+              coordinator_name: coordinator.name,
+              coordinator_email: coordinator.email,
+              coordinator_status: coordinator.is_active ? 'Active' : 'Inactive',
+              affiliate_name: affiliate.user.name,
+              affiliate_email: affiliate.user.email,
+              affiliate_status: affiliate.user.status,
+              affiliate_tier: affiliate.tier.name,
+              referral_count: affiliate.totalReferrals,
+              commission_earned: `$${affiliate.totalEarnings.toFixed(2)}`,
+              pending_commissions: `$${affiliate.pendingEarnings.toFixed(2)}`,
+              joined_date: new Date(affiliate.createdAt).toLocaleDateString()
+            });
+            
+            if (rowIndex % 2 === 1) {
+              row.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'F2F2F2' }
+              };
+            }
+            row.alignment = { horizontal: 'center', vertical: 'middle' };
+            rowIndex++;
+          }
+        }
+      } catch (error) {
+        console.error(`Error fetching network data for coordinator ${coordinator.id}:`, error);
+      }
+    }
+
+    // Add borders to all sheets
+    [summarySheet, coordinatorReportSheet].forEach(sheet => {
+      sheet.eachRow((row, rowNumber) => {
+        row.eachCell((cell) => {
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+          };
+        });
       });
     });
 

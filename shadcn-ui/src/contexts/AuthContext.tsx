@@ -6,7 +6,7 @@ interface User {
   id: string;
   email: string;
   name: string;
-  role: 'admin' | 'affiliate' | 'client';
+  role: 'admin' | 'affiliate' | 'client' | 'coordinator';
   referral_code: string;
   tier: string;
 }

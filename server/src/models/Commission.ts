@@ -122,4 +122,39 @@ export class CommissionModel {
       totalPages: Math.ceil(parseInt(countResult.rows[0].count) / limit)
     };
   }
+
+  // Coordinator-specific methods
+  static async getCommissionsByCoordinator(coordinatorId: string, page: number = 1, limit: number = 20): Promise<{
+    commissions: any[];
+    total: number;
+    totalPages: number;
+  }> {
+    const offset = (page - 1) * limit;
+    
+    const [commissionsResult, countResult] = await Promise.all([
+      pool.query(
+        `SELECT c.*, u.name as affiliate_name, u.email as affiliate_email, 
+                t.customer_email, t.amount as transaction_amount, t.created_at as transaction_date
+         FROM commissions c
+         JOIN users u ON c.affiliate_id = u.id
+         JOIN transactions t ON c.transaction_id = t.id
+         WHERE u.coordinator_id = $1
+         ORDER BY c.created_at DESC
+         LIMIT $2 OFFSET $3`,
+        [coordinatorId, limit, offset]
+      ),
+      pool.query(
+        `SELECT COUNT(*) FROM commissions c
+         JOIN users u ON c.affiliate_id = u.id
+         WHERE u.coordinator_id = $1`,
+        [coordinatorId]
+      )
+    ]);
+    
+    return {
+      commissions: commissionsResult.rows,
+      total: parseInt(countResult.rows[0].count),
+      totalPages: Math.ceil(parseInt(countResult.rows[0].count) / limit)
+    };
+  }
 }

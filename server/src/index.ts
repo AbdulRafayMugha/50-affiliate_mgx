@@ -9,6 +9,7 @@ import { affiliateRoutes } from './routes/affiliate';
 import { transactionRoutes } from './routes/transaction';
 import { adminRoutes } from './routes/admin';
 import { commissionRoutes } from './routes/commission';
+import { coordinatorRoutes } from './routes/coordinator';
 import { initDatabase } from './database/init';
 import seedCommissionLevels from './database/seed-commission-levels';
 
@@ -43,6 +44,7 @@ app.use('/api/affiliate', affiliateRoutes);
 app.use('/api/transaction', transactionRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/commission', commissionRoutes);
+app.use('/api/coordinator', coordinatorRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

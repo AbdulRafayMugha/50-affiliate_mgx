@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.exportAffiliateReport = exports.getAffiliateEmailStats = exports.getAffiliateEmailReferrals = exports.deleteAffiliate = exports.updateAffiliateStatus = exports.processAffiliatePayment = exports.getAffiliateCommissions = exports.getAffiliateBankDetails = exports.updateCommissionStatus = exports.getAffiliateDetails = exports.payCommissions = exports.approveCommissions = exports.getPendingCommissions = exports.getTransactions = exports.getAffiliates = exports.getTopAffiliates = exports.getDashboard = void 0;
+exports.exportCoordinatorReport = exports.updateCoordinatorStatus = exports.getCoordinatorNetwork = exports.getCoordinators = exports.exportAffiliateReport = exports.getAffiliateEmailStats = exports.getAffiliateEmailReferrals = exports.deleteAffiliate = exports.updateAffiliateStatus = exports.processAffiliatePayment = exports.getAffiliateCommissions = exports.getAffiliateBankDetails = exports.updateCommissionStatus = exports.getAffiliateDetails = exports.payCommissions = exports.approveCommissions = exports.getPendingCommissions = exports.getTransactions = exports.getAffiliates = exports.getTopAffiliates = exports.getDashboard = void 0;
 const User_1 = require("../models/User");
 const Transaction_1 = require("../models/Transaction");
 const Commission_1 = require("../models/Commission");
@@ -203,6 +203,81 @@ exports.exportAffiliateReport = (0, errorHandler_1.asyncHandler)(async (req, res
     catch (error) {
         console.error('Error generating Excel report:', error);
         res.status(500).json({ message: 'Failed to generate Excel report' });
+    }
+});
+// Coordinator Management Endpoints
+exports.getCoordinators = (0, errorHandler_1.asyncHandler)(async (req, res) => {
+    const coordinators = await User_1.UserModel.getAllCoordinators();
+    res.json({ coordinators });
+});
+exports.getCoordinatorNetwork = (0, errorHandler_1.asyncHandler)(async (req, res) => {
+    const { coordinatorId } = req.params;
+    // Verify coordinator exists
+    const coordinator = await User_1.UserModel.findById(coordinatorId);
+    if (!coordinator || coordinator.role !== 'coordinator') {
+        return res.status(404).json({ error: 'Coordinator not found' });
+    }
+    // Get coordinator's affiliates with their stats
+    const affiliatesResult = await User_1.UserModel.getAffiliatesByCoordinator(coordinatorId);
+    const affiliates = affiliatesResult.affiliates;
+    // Get additional stats for each affiliate
+    const affiliatesWithStats = await Promise.all(affiliates.map(async (affiliate) => {
+        const [commissionStats, referralCount] = await Promise.all([
+            Commission_1.CommissionModel.getStats(affiliate.id).catch(() => ({ total: 0, pending: 0, paid: 0 })),
+            User_1.UserModel.getReferralCount(affiliate.id).catch(() => 0)
+        ]);
+        return {
+            id: affiliate.id,
+            name: affiliate.user.name,
+            email: affiliate.user.email,
+            is_active: affiliate.user.status === 'active',
+            tier: affiliate.tier.name,
+            referral_count: referralCount,
+            commission_earned: commissionStats.total || 0,
+            created_at: affiliate.createdAt
+        };
+    }));
+    res.json({
+        coordinator: {
+            id: coordinator.id,
+            name: coordinator.name,
+            email: coordinator.email,
+            is_active: coordinator.is_active,
+            created_at: coordinator.created_at,
+            affiliate_count: affiliates.length,
+            active_affiliate_count: affiliates.filter(a => a.is_active).length,
+            total_commissions: affiliatesWithStats.reduce((sum, a) => sum + a.commission_earned, 0),
+            total_referrals: affiliatesWithStats.reduce((sum, a) => sum + a.referral_count, 0)
+        },
+        affiliates: affiliatesWithStats
+    });
+});
+exports.updateCoordinatorStatus = (0, errorHandler_1.asyncHandler)(async (req, res) => {
+    const { coordinatorId } = req.params;
+    const { isActive } = req.body;
+    // Verify coordinator exists
+    const coordinator = await User_1.UserModel.findById(coordinatorId);
+    if (!coordinator || coordinator.role !== 'coordinator') {
+        return res.status(404).json({ error: 'Coordinator not found' });
+    }
+    await User_1.UserModel.updateStatus(coordinatorId, isActive);
+    res.json({
+        message: `Coordinator ${isActive ? 'activated' : 'deactivated'} successfully`,
+        isActive
+    });
+});
+exports.exportCoordinatorReport = (0, errorHandler_1.asyncHandler)(async (req, res) => {
+    try {
+        const buffer = await ReportModel_1.ReportModel.generateCoordinatorExcelReport();
+        // Set response headers for file download
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="coordinator-report-${new Date().toISOString().split('T')[0]}.xlsx"`);
+        res.setHeader('Content-Length', buffer.length);
+        res.send(buffer);
+    }
+    catch (error) {
+        console.error('Error generating coordinator Excel report:', error);
+        res.status(500).json({ message: 'Failed to generate coordinator Excel report' });
     }
 });
 //# sourceMappingURL=adminController.js.map

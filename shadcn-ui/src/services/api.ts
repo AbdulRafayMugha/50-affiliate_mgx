@@ -140,6 +140,13 @@ export const adminAPI = {
   exportReport: () => 
     api.get('/admin/export-report', { responseType: 'blob' }),
   
+  // Coordinator Management
+  getCoordinators: () => api.get('/admin/coordinators'),
+  getCoordinatorNetwork: (coordinatorId: string) => api.get(`/admin/coordinators/${coordinatorId}/network`),
+  updateCoordinatorStatus: (coordinatorId: string, isActive: boolean) =>
+    api.patch(`/admin/coordinators/${coordinatorId}/status`, { isActive }),
+  exportCoordinatorReport: () => api.get('/admin/coordinators/export-report', { responseType: 'blob' }),
+  
   getTransactions: (page?: number, limit?: number) =>
     api.get('/admin/transactions', { params: { page, limit } }),
   
@@ -154,6 +161,49 @@ export const adminAPI = {
   
   updateCommissionStatus: (commissionId: string, status: string) =>
     api.patch(`/admin/commissions/${commissionId}/status`, { status }),
+};
+
+// Coordinator API
+export const coordinatorAPI = {
+  getDashboard: () => api.get('/coordinator/dashboard'),
+  
+  getAffiliates: (page?: number, limit?: number) =>
+    api.get('/coordinator/affiliates', { params: { page, limit } }),
+  
+  getAffiliateDetails: (affiliateId: string) =>
+    api.get(`/coordinator/affiliates/${affiliateId}`),
+  
+  updateAffiliateStatus: (affiliateId: string, isActive: boolean) =>
+    api.patch(`/coordinator/affiliates/${affiliateId}/status`, { isActive }),
+  
+  getReferrals: (page?: number, limit?: number) =>
+    api.get('/coordinator/referrals', { params: { page, limit } }),
+  
+  getPayments: (page?: number, limit?: number) =>
+    api.get('/coordinator/payments', { params: { page, limit } }),
+  
+  getCommissions: (page?: number, limit?: number) =>
+    api.get('/coordinator/commissions', { params: { page, limit } }),
+  
+  sendEmailReferral: (email: string, name?: string, message?: string) =>
+    api.post('/coordinator/email-referrals', { email, name, message }),
+  
+  getEmailReferrals: (page?: number, limit?: number) =>
+    api.get('/coordinator/email-referrals', { params: { page, limit } }),
+  
+  getReferralKey: () => api.get('/coordinator/referral-key'),
+  
+  assignAffiliate: (affiliateId: string) =>
+    api.post(`/coordinator/affiliates/${affiliateId}/assign`),
+  
+  removeAffiliate: (affiliateId: string) =>
+    api.delete(`/coordinator/affiliates/${affiliateId}/assign`),
+  
+  registerAffiliate: (affiliateData: {
+    name: string;
+    email: string;
+    password: string;
+  }) => api.post('/coordinator/affiliates/register', affiliateData),
 };
 
 export default api;

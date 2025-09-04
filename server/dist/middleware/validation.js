@@ -25,7 +25,7 @@ exports.schemas = {
         email: joi_1.default.string().email().required(),
         password: joi_1.default.string().min(8).required(),
         name: joi_1.default.string().min(2).max(100).required(),
-        role: joi_1.default.string().valid('admin', 'affiliate', 'client').optional(),
+        role: joi_1.default.string().valid('admin', 'affiliate', 'client', 'coordinator').optional(),
         referrer_code: joi_1.default.string().optional()
     }),
     login: joi_1.default.object({
@@ -44,6 +44,11 @@ exports.schemas = {
     }),
     affiliateLink: joi_1.default.object({
         custom_code: joi_1.default.string().alphanum().min(6).max(20).optional()
+    }),
+    emailReferral: joi_1.default.object({
+        email: joi_1.default.string().email().required(),
+        name: joi_1.default.string().max(100).optional(),
+        message: joi_1.default.string().max(500).optional()
     })
 };
 //# sourceMappingURL=validation.js.map

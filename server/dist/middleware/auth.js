@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.requireAffiliate = exports.requireAdmin = exports.requireRole = exports.authenticateToken = void 0;
+exports.requireCoordinator = exports.requireAffiliate = exports.requireAdmin = exports.requireRole = exports.authenticateToken = void 0;
 const tslib_1 = require("tslib");
 const jsonwebtoken_1 = tslib_1.__importDefault(require("jsonwebtoken"));
 const User_1 = require("../models/User");
@@ -39,4 +39,5 @@ const requireRole = (roles) => {
 exports.requireRole = requireRole;
 exports.requireAdmin = (0, exports.requireRole)(['admin']);
 exports.requireAffiliate = (0, exports.requireRole)(['affiliate', 'admin']);
+exports.requireCoordinator = (0, exports.requireRole)(['coordinator', 'admin']);
 //# sourceMappingURL=auth.js.map

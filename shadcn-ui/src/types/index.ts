@@ -3,7 +3,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'admin' | 'affiliate' | 'client';
+  role: 'admin' | 'affiliate' | 'client' | 'coordinator';
   avatar?: string;
   createdAt: string;
   status: 'active' | 'inactive' | 'pending';

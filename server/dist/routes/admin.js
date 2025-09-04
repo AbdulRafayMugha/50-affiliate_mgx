@@ -36,4 +36,9 @@ router.put('/commission-settings', commissionController_1.updateCommissionSettin
 // Commission Utility Routes (Admin Only)
 router.post('/commission-levels/reset', commissionController_1.resetToDefaults);
 router.post('/commission-calculator', commissionController_1.calculateCommissions);
+// Coordinator Management Routes (Admin Only)
+router.get('/coordinators', adminController_1.getCoordinators);
+router.get('/coordinators/:coordinatorId/network', adminController_1.getCoordinatorNetwork);
+router.patch('/coordinators/:coordinatorId/status', adminController_1.updateCoordinatorStatus);
+router.get('/coordinators/export-report', adminController_1.exportCoordinatorReport);
 //# sourceMappingURL=admin.js.map

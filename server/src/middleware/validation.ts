@@ -25,7 +25,7 @@ export const schemas = {
     email: Joi.string().email().required(),
     password: Joi.string().min(8).required(),
     name: Joi.string().min(2).max(100).required(),
-    role: Joi.string().valid('admin', 'affiliate', 'client').optional(),
+    role: Joi.string().valid('admin', 'affiliate', 'client', 'coordinator').optional(),
     referrer_code: Joi.string().optional()
   }),
   
@@ -48,5 +48,11 @@ export const schemas = {
   
   affiliateLink: Joi.object({
     custom_code: Joi.string().alphanum().min(6).max(20).optional()
+  }),
+  
+  emailReferral: Joi.object({
+    email: Joi.string().email().required(),
+    name: Joi.string().max(100).optional(),
+    message: Joi.string().max(500).optional()
   })
 };

@@ -3,8 +3,9 @@ export interface User {
     email: string;
     password_hash?: string;
     name: string;
-    role: 'admin' | 'affiliate' | 'client';
+    role: 'admin' | 'affiliate' | 'client' | 'coordinator';
     referrer_id?: string;
+    coordinator_id?: string;
     referral_code: string;
     tier: 'Bronze' | 'Silver' | 'Gold' | 'Platinum';
     is_active: boolean;
@@ -16,8 +17,10 @@ export interface CreateUserInput {
     email: string;
     password: string;
     name: string;
-    role?: 'admin' | 'affiliate' | 'client';
+    role?: 'admin' | 'affiliate' | 'client' | 'coordinator';
     referrer_code?: string;
+    coordinator_id?: string;
+    created_by_coordinator?: string;
 }
 export declare class UserModel {
     static getTopAffiliates(limit?: number): Promise<any[]>;
@@ -41,4 +44,19 @@ export declare class UserModel {
         total: number;
         totalPages: number;
     }>;
+    static getAffiliatesByCoordinator(coordinatorId: string, page?: number, limit?: number): Promise<{
+        affiliates: any[];
+        total: number;
+        totalPages: number;
+    }>;
+    static assignAffiliateToCoordinator(affiliateId: string, coordinatorId: string): Promise<void>;
+    static removeAffiliateFromCoordinator(affiliateId: string): Promise<void>;
+    static getCoordinatorStats(coordinatorId: string): Promise<any>;
+    static getCoordinatorReferrals(coordinatorId: string, page?: number, limit?: number): Promise<{
+        referrals: any[];
+        total: number;
+        totalPages: number;
+    }>;
+    static getAllCoordinators(): Promise<any[]>;
+    static getReferralCount(userId: string): Promise<number>;
 }

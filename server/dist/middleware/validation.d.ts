@@ -7,4 +7,5 @@ export declare const schemas: {
     transaction: Joi.ObjectSchema<any>;
     emailInvite: Joi.ObjectSchema<any>;
     affiliateLink: Joi.ObjectSchema<any>;
+    emailReferral: Joi.ObjectSchema<any>;
 };

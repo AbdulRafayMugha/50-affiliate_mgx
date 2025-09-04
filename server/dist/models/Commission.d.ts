@@ -29,4 +29,9 @@ export declare class CommissionModel {
         total: number;
         totalPages: number;
     }>;
+    static getCommissionsByCoordinator(coordinatorId: string, page?: number, limit?: number): Promise<{
+        commissions: any[];
+        total: number;
+        totalPages: number;
+    }>;
 }
