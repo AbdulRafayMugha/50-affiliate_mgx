@@ -92,14 +92,22 @@ class UserModel {
             }
             // Find referrer if referrer_code is provided
             let referrer_id = null;
+            let coordinatorId = input.coordinator_id || input.created_by_coordinator || null;
             if (input.referrer_code) {
-                const { rows } = await client.query('SELECT id FROM users WHERE referral_code = $1 AND is_active = true', [input.referrer_code]);
+                const { rows } = await client.query('SELECT id, role, coordinator_id FROM users WHERE referral_code = $1 AND is_active = true', [input.referrer_code]);
                 if (rows.length > 0) {
-                    referrer_id = rows[0].id;
+                    const referrer = rows[0];
+                    referrer_id = referrer.id;
+                    // If referrer is a coordinator, assign new affiliate to that coordinator
+                    if (referrer.role === 'coordinator') {
+                        coordinatorId = referrer.id;
+                    }
+                    // If referrer is an affiliate, assign new affiliate to the same coordinator
+                    else if (referrer.role === 'affiliate' && referrer.coordinator_id) {
+                        coordinatorId = referrer.coordinator_id;
+                    }
                 }
             }
-            // Determine coordinator_id - use provided value or created_by_coordinator
-            const coordinatorId = input.coordinator_id || input.created_by_coordinator || null;
             // Create user
             const { rows } = await client.query(`INSERT INTO users (email, password_hash, name, role, referrer_id, coordinator_id, referral_code)
          VALUES ($1, $2, $3, $4, $5, $6, $7)

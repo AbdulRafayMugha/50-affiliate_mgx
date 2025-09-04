@@ -5,7 +5,7 @@ import { BankDetailsModel } from '../models/BankDetails';
 import { asyncHandler } from '../middleware/errorHandler';
 
 export const register = asyncHandler(async (req: Request, res: Response) => {
-  const { email, password, name, role, referrer_code } = req.body;
+  const { email, password, name, role, referral_code } = req.body;
   
   // Check if user already exists
   const existingUser = await UserModel.findByEmail(email);
@@ -13,9 +13,9 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
     return res.status(409).json({ error: 'User already exists with this email' });
   }
   
-  // Validate referrer code if provided
-  if (referrer_code) {
-    const referrer = await UserModel.findByReferralCode(referrer_code);
+  // Validate referral code if provided
+  if (referral_code) {
+    const referrer = await UserModel.findByReferralCode(referral_code);
     if (!referrer) {
       return res.status(400).json({ error: 'Invalid referral code' });
     }
@@ -27,7 +27,7 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
     password,
     name,
     role,
-    referrer_code
+    referrer_code: referral_code
   });
   
   // Generate JWT token
@@ -46,7 +46,8 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
       name: user.name,
       role: user.role,
       referral_code: user.referral_code,
-      tier: user.tier
+      tier: user.tier,
+      coordinator_id: user.coordinator_id
     },
     token
   });
@@ -77,7 +78,8 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
       name: user.name,
       role: user.role,
       referral_code: user.referral_code,
-      tier: user.tier
+      tier: user.tier,
+      coordinator_id: user.coordinator_id
     },
     token
   });
@@ -98,6 +100,7 @@ export const getProfile = asyncHandler(async (req: any, res: Response) => {
       role: user.role,
       referral_code: user.referral_code,
       tier: user.tier,
+      coordinator_id: user.coordinator_id,
       created_at: user.created_at
     }
   });

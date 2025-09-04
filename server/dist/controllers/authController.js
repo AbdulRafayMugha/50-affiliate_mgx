@@ -7,15 +7,15 @@ const User_1 = require("../models/User");
 const BankDetails_1 = require("../models/BankDetails");
 const errorHandler_1 = require("../middleware/errorHandler");
 exports.register = (0, errorHandler_1.asyncHandler)(async (req, res) => {
-    const { email, password, name, role, referrer_code } = req.body;
+    const { email, password, name, role, referral_code } = req.body;
     // Check if user already exists
     const existingUser = await User_1.UserModel.findByEmail(email);
     if (existingUser) {
         return res.status(409).json({ error: 'User already exists with this email' });
     }
-    // Validate referrer code if provided
-    if (referrer_code) {
-        const referrer = await User_1.UserModel.findByReferralCode(referrer_code);
+    // Validate referral code if provided
+    if (referral_code) {
+        const referrer = await User_1.UserModel.findByReferralCode(referral_code);
         if (!referrer) {
             return res.status(400).json({ error: 'Invalid referral code' });
         }
@@ -26,7 +26,7 @@ exports.register = (0, errorHandler_1.asyncHandler)(async (req, res) => {
         password,
         name,
         role,
-        referrer_code
+        referrer_code: referral_code
     });
     // Generate JWT token
     const jwtSecret = process.env.JWT_SECRET || 'default-secret-key-change-in-production';
@@ -39,7 +39,8 @@ exports.register = (0, errorHandler_1.asyncHandler)(async (req, res) => {
             name: user.name,
             role: user.role,
             referral_code: user.referral_code,
-            tier: user.tier
+            tier: user.tier,
+            coordinator_id: user.coordinator_id
         },
         token
     });
@@ -62,7 +63,8 @@ exports.login = (0, errorHandler_1.asyncHandler)(async (req, res) => {
             name: user.name,
             role: user.role,
             referral_code: user.referral_code,
-            tier: user.tier
+            tier: user.tier,
+            coordinator_id: user.coordinator_id
         },
         token
     });
@@ -80,6 +82,7 @@ exports.getProfile = (0, errorHandler_1.asyncHandler)(async (req, res) => {
             role: user.role,
             referral_code: user.referral_code,
             tier: user.tier,
+            coordinator_id: user.coordinator_id,
             created_at: user.created_at
         }
     });

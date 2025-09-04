@@ -26,7 +26,7 @@ export const schemas = {
     password: Joi.string().min(8).required(),
     name: Joi.string().min(2).max(100).required(),
     role: Joi.string().valid('admin', 'affiliate', 'client', 'coordinator').optional(),
-    referrer_code: Joi.string().optional()
+    referral_code: Joi.string().optional()
   }),
   
   login: Joi.object({

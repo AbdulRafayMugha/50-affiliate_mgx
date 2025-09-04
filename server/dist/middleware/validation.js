@@ -26,7 +26,7 @@ exports.schemas = {
         password: joi_1.default.string().min(8).required(),
         name: joi_1.default.string().min(2).max(100).required(),
         role: joi_1.default.string().valid('admin', 'affiliate', 'client', 'coordinator').optional(),
-        referrer_code: joi_1.default.string().optional()
+        referral_code: joi_1.default.string().optional()
     }),
     login: joi_1.default.object({
         email: joi_1.default.string().email().required(),
