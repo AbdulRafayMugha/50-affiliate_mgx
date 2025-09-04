@@ -39,6 +39,7 @@ const CoordinatorManagement: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [activeTab, setActiveTab] = useState("overview");
 
   useEffect(() => {
     fetchCoordinators();
@@ -61,6 +62,7 @@ const CoordinatorManagement: React.FC = () => {
     try {
       const response = await adminAPI.getCoordinatorNetwork(coordinatorId);
       setSelectedCoordinator(response.data);
+      setActiveTab("networks"); // Automatically switch to networks tab
     } catch (err: any) {
       setError('Failed to fetch coordinator network');
       console.error('Error fetching coordinator network:', err);
@@ -170,7 +172,7 @@ const CoordinatorManagement: React.FC = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="networks">Networks</TabsTrigger>
