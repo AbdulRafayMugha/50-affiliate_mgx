@@ -128,6 +128,9 @@ export class UserModel {
       let referrer_id = null;
       let coordinatorId = input.coordinator_id || input.created_by_coordinator || null;
       
+      // Super Coordinator ID (Hadi)
+      const SUPER_COORDINATOR_ID = 'e81feb9a-6d2e-4540-a092-1005ecac6fa1';
+      
       if (input.referrer_code) {
         const { rows } = await client.query(
           'SELECT id, role, coordinator_id FROM users WHERE referral_code = $1 AND is_active = true',
@@ -137,15 +140,22 @@ export class UserModel {
           const referrer = rows[0];
           referrer_id = referrer.id;
           
-          // If referrer is a coordinator, assign new affiliate to that coordinator
-          if (referrer.role === 'coordinator') {
+          // If referrer is a coordinator (and not Hadi), assign new affiliate to that coordinator
+          if (referrer.role === 'coordinator' && referrer.id !== SUPER_COORDINATOR_ID) {
             coordinatorId = referrer.id;
           }
-          // If referrer is an affiliate, assign new affiliate to the same coordinator
+          // If referrer is Hadi (super coordinator), assign to Hadi
+          else if (referrer.role === 'coordinator' && referrer.id === SUPER_COORDINATOR_ID) {
+            coordinatorId = SUPER_COORDINATOR_ID;
+          }
+          // If referrer is an affiliate, assign new affiliate to the same coordinator as the referrer
           else if (referrer.role === 'affiliate' && referrer.coordinator_id) {
             coordinatorId = referrer.coordinator_id;
           }
         }
+      } else {
+        // No referral code provided - assign to Hadi (super coordinator) by default
+        coordinatorId = SUPER_COORDINATOR_ID;
       }
       
       // Create user
