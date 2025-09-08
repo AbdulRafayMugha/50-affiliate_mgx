@@ -109,7 +109,7 @@ const CoordinatorDashboard: React.FC = () => {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${stats.totalCommissions.toFixed(2)}</div>
+              <div className="text-2xl font-bold">AED {stats.totalCommissions.toFixed(2)}</div>
               <p className="text-xs text-muted-foreground">
                 From your network
               </p>

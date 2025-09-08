@@ -183,7 +183,7 @@ const CoordinatorAffiliates: React.FC = () => {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${stats.totalEarnings.toFixed(2)}</div>
+              <div className="text-2xl font-bold">AED {stats.totalEarnings.toFixed(2)}</div>
               <p className="text-xs text-muted-foreground">
                 From your network
               </p>
@@ -196,7 +196,7 @@ const CoordinatorAffiliates: React.FC = () => {
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-orange-600">${stats.pendingEarnings.toFixed(2)}</div>
+              <div className="text-2xl font-bold text-orange-600">AED {stats.pendingEarnings.toFixed(2)}</div>
               <p className="text-xs text-muted-foreground">
                 Awaiting approval
               </p>
@@ -261,10 +261,10 @@ const CoordinatorAffiliates: React.FC = () => {
                         </Badge>
                       </TableCell>
                       <TableCell className="font-medium">
-                        ${affiliate.totalEarnings.toFixed(2)}
+                        AED {affiliate.totalEarnings.toFixed(2)}
                       </TableCell>
                       <TableCell className="text-orange-600">
-                        ${affiliate.pendingEarnings.toFixed(2)}
+                        AED {affiliate.pendingEarnings.toFixed(2)}
                       </TableCell>
                       <TableCell>{affiliate.totalReferrals}</TableCell>
                       <TableCell>{affiliate.conversionRate.toFixed(1)}%</TableCell>

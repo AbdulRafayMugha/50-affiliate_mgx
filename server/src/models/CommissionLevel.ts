@@ -35,20 +35,25 @@ export class CommissionLevelModel {
         level,
         percentage,
         description,
-        is_active as isActive,
-        min_referrals as minReferrals,
-        max_referrals as maxReferrals,
-        created_at as createdAt,
-        updated_at as updatedAt
+        is_active,
+        min_referrals,
+        max_referrals,
+        created_at,
+        updated_at
        FROM commission_levels 
        ORDER BY level ASC
     `);
     
     return rows.map(row => ({
-      ...row,
-      isActive: Boolean(row.isActive),
-      createdAt: new Date(row.createdAt),
-      updatedAt: new Date(row.updatedAt)
+      id: row.id,
+      level: row.level,
+      percentage: row.percentage,
+      description: row.description,
+      isActive: Boolean(row.is_active),
+      minReferrals: row.min_referrals,
+      maxReferrals: row.max_referrals,
+      createdAt: new Date(row.created_at),
+      updatedAt: new Date(row.updated_at)
     }));
   }
 
@@ -60,11 +65,11 @@ export class CommissionLevelModel {
         level,
         percentage,
         description,
-        is_active as isActive,
-        min_referrals as minReferrals,
-        max_referrals as maxReferrals,
-        created_at as createdAt,
-        updated_at as updatedAt
+        is_active,
+        min_referrals,
+        max_referrals,
+        created_at,
+        updated_at
        FROM commission_levels 
        WHERE id = $1
     `, [id]);
@@ -73,10 +78,15 @@ export class CommissionLevelModel {
     if (!row) return null;
     
     return {
-      ...row,
-      isActive: Boolean(row.isActive),
-      createdAt: new Date(row.createdAt),
-      updatedAt: new Date(row.updatedAt)
+      id: row.id,
+      level: row.level,
+      percentage: row.percentage,
+      description: row.description,
+      isActive: Boolean(row.is_active),
+      minReferrals: row.min_referrals,
+      maxReferrals: row.max_referrals,
+      createdAt: new Date(row.created_at),
+      updatedAt: new Date(row.updated_at)
     };
   }
 
@@ -88,11 +98,11 @@ export class CommissionLevelModel {
         level,
         percentage,
         description,
-        is_active as isActive,
-        min_referrals as minReferrals,
-        max_referrals as maxReferrals,
-        created_at as createdAt,
-        updated_at as updatedAt
+        is_active,
+        min_referrals,
+        max_referrals,
+        created_at,
+        updated_at
        FROM commission_levels 
        WHERE level = $1
     `, [level]);
@@ -101,10 +111,15 @@ export class CommissionLevelModel {
     if (!row) return null;
     
     return {
-      ...row,
-      isActive: Boolean(row.isActive),
-      createdAt: new Date(row.createdAt),
-      updatedAt: new Date(row.updatedAt)
+      id: row.id,
+      level: row.level,
+      percentage: row.percentage,
+      description: row.description,
+      isActive: Boolean(row.is_active),
+      minReferrals: row.min_referrals,
+      maxReferrals: row.max_referrals,
+      createdAt: new Date(row.created_at),
+      updatedAt: new Date(row.updated_at)
     };
   }
 
@@ -209,16 +224,16 @@ export class CommissionLevelModel {
     const { rows } = await pool.query(`
       SELECT 
         id,
-        global_commission_enabled as globalCommissionEnabled,
-        default_level1_commission as defaultLevel1Commission,
-        default_level2_commission as defaultLevel2Commission,
-        default_level3_commission as defaultLevel3Commission,
-        max_commission_levels as maxCommissionLevels,
-        auto_adjust_enabled as autoAdjustEnabled,
-        minimum_commission as minimumCommission,
-        maximum_commission as maximumCommission,
-        created_at as createdAt,
-        updated_at as updatedAt
+        global_commission_enabled,
+        default_level1_commission,
+        default_level2_commission,
+        default_level3_commission,
+        max_commission_levels,
+        auto_adjust_enabled,
+        minimum_commission,
+        maximum_commission,
+        created_at,
+        updated_at
        FROM commission_settings 
        LIMIT 1
     `);
@@ -227,11 +242,17 @@ export class CommissionLevelModel {
     if (!row) return null;
     
     return {
-      ...row,
-      globalCommissionEnabled: Boolean(row.globalCommissionEnabled),
-      autoAdjustEnabled: Boolean(row.autoAdjustEnabled),
-      createdAt: new Date(row.createdAt),
-      updatedAt: new Date(row.updatedAt)
+      id: row.id,
+      globalCommissionEnabled: Boolean(row.global_commission_enabled),
+      defaultLevel1Commission: row.default_level1_commission,
+      defaultLevel2Commission: row.default_level2_commission,
+      defaultLevel3Commission: row.default_level3_commission,
+      maxCommissionLevels: row.max_commission_levels,
+      autoAdjustEnabled: Boolean(row.auto_adjust_enabled),
+      minimumCommission: row.minimum_commission,
+      maximumCommission: row.maximum_commission,
+      createdAt: new Date(row.created_at),
+      updatedAt: new Date(row.updated_at)
     };
   }
 

@@ -365,7 +365,7 @@ const MyReferrals = () => {
                         {user.totalEarnings !== undefined && (
                           <span className="flex items-center">
                             <DollarSign className="w-3 h-3 mr-1" />
-                            ${user.totalEarnings.toLocaleString()}
+                            AED {user.totalEarnings.toLocaleString()}
                           </span>
                         )}
                         {user.totalReferrals !== undefined && (
@@ -411,7 +411,7 @@ const MyReferrals = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">Total Earnings:</span>
-                <span className="font-medium">${getLevelStats(1).earnings.toLocaleString()}</span>
+                <span className="font-medium">AED {getLevelStats(1).earnings.toLocaleString()}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">Avg Conversion:</span>
@@ -436,7 +436,7 @@ const MyReferrals = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">Total Earnings:</span>
-                <span className="font-medium">${getLevelStats(2).earnings.toLocaleString()}</span>
+                <span className="font-medium">AED {getLevelStats(2).earnings.toLocaleString()}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">Avg Conversion:</span>
@@ -461,7 +461,7 @@ const MyReferrals = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">Total Earnings:</span>
-                <span className="font-medium">${getLevelStats(3).earnings.toLocaleString()}</span>
+                <span className="font-medium">AED {getLevelStats(3).earnings.toLocaleString()}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">Avg Conversion:</span>

@@ -168,14 +168,14 @@ const AffiliateDashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="Total Earnings"
-          value={`$${stats.totalEarnings.toLocaleString()}`}
-          subtitle={`+$${stats.thisMonthEarnings} this month`}
+          value={`AED ${stats.totalEarnings.toLocaleString()}`}
+          subtitle={`+AED ${stats.thisMonthEarnings} this month`}
           icon={DollarSign}
           trend="up"
         />
         <StatCard
           title="Pending Earnings"
-          value={`$${stats.pendingEarnings.toLocaleString()}`}
+          value={`AED ${stats.pendingEarnings.toLocaleString()}`}
           subtitle="Awaiting approval"
           icon={TrendingUp}
         />
@@ -188,7 +188,7 @@ const AffiliateDashboard = () => {
         />
         <StatCard
           title="This Month"
-          value={`$${stats.thisMonthEarnings}`}
+          value={`AED ${stats.thisMonthEarnings}`}
           subtitle="Current month earnings"
           icon={DollarSign}
         />
@@ -338,7 +338,7 @@ const AffiliateDashboard = () => {
                       Level {commission.level}
                     </Badge>
                     <div>
-                      <p className="text-sm font-medium">${commission.amount.toFixed(2)}</p>
+                      <p className="text-sm font-medium">AED {commission.amount.toFixed(2)}</p>
                       <p className="text-xs text-gray-500">
                         {new Date(commission.createdAt).toLocaleDateString()}
                       </p>
@@ -410,7 +410,7 @@ const AffiliateDashboard = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-bold text-green-600">+${bonus.amount}</p>
+                    <p className="text-lg font-bold text-green-600">+AED {bonus.amount}</p>
                     <Badge variant={bonus.status === 'paid' ? 'default' : 'secondary'}>
                       {bonus.status}
                     </Badge>

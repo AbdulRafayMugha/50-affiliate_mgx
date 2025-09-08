@@ -216,7 +216,7 @@ const CoordinatorManagement: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  ${coordinators.reduce((sum, c) => sum + c.total_commissions, 0).toFixed(2)}
+                  AED {coordinators.reduce((sum, c) => sum + c.total_commissions, 0).toFixed(2)}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Across all networks
@@ -274,7 +274,7 @@ const CoordinatorManagement: React.FC = () => {
                           <div className="text-green-600">{coordinator.active_affiliate_count} active</div>
                         </div>
                       </TableCell>
-                      <TableCell>${coordinator.total_commissions.toFixed(2)}</TableCell>
+                      <TableCell>AED {coordinator.total_commissions.toFixed(2)}</TableCell>
                       <TableCell>{coordinator.total_referrals}</TableCell>
                       <TableCell>
                         {new Date(coordinator.created_at).toLocaleDateString()}
@@ -343,7 +343,7 @@ const CoordinatorManagement: React.FC = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
-                      ${selectedCoordinator.affiliates.reduce((sum, a) => sum + a.commission_earned, 0).toFixed(2)}
+                      AED {selectedCoordinator.affiliates.reduce((sum, a) => sum + a.commission_earned, 0).toFixed(2)}
                     </div>
                     <p className="text-xs text-muted-foreground">
                       From network affiliates
@@ -396,7 +396,7 @@ const CoordinatorManagement: React.FC = () => {
                           <TableCell>{getStatusBadge(affiliate.is_active)}</TableCell>
                           <TableCell>{getTierBadge(affiliate.tier)}</TableCell>
                           <TableCell>{affiliate.referral_count}</TableCell>
-                          <TableCell>${affiliate.commission_earned.toFixed(2)}</TableCell>
+                          <TableCell>AED {affiliate.commission_earned.toFixed(2)}</TableCell>
                           <TableCell>
                             {new Date(affiliate.created_at).toLocaleDateString()}
                           </TableCell>

@@ -336,7 +336,7 @@ const BonusesRewards = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Bonuses Earned</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  ${totalEarned.toLocaleString()}
+                  AED {totalEarned.toLocaleString()}
                 </p>
                 <p className="text-sm text-green-600 flex items-center mt-1">
                   <Trophy className="h-4 w-4 mr-1" />
@@ -354,7 +354,7 @@ const BonusesRewards = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Paid Bonuses</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  ${paidBonuses.reduce((sum, b) => sum + b.amount, 0).toLocaleString()}
+                  AED {paidBonuses.reduce((sum, b) => sum + b.amount, 0).toLocaleString()}
                 </p>
                 <p className="text-sm text-blue-600 flex items-center mt-1">
                   <CheckCircle className="h-4 w-4 mr-1" />
@@ -372,7 +372,7 @@ const BonusesRewards = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Pending Bonuses</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  ${pendingBonuses.reduce((sum, b) => sum + b.amount, 0).toLocaleString()}
+                  AED {pendingBonuses.reduce((sum, b) => sum + b.amount, 0).toLocaleString()}
                 </p>
                 <p className="text-sm text-orange-600 flex items-center mt-1">
                   <Clock className="h-4 w-4 mr-1" />
@@ -409,7 +409,7 @@ const BonusesRewards = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-green-600">${challenge.reward}</p>
+                    <p className="font-bold text-green-600">AED {challenge.reward}</p>
                     <p className={`text-xs font-medium ${getDifficultyColor(challenge.difficulty)}`}>
                       {challenge.difficulty.toUpperCase()}
                     </p>
@@ -541,7 +541,7 @@ const BonusesRewards = () => {
                   </div>
                   <div className="text-right flex items-center space-x-2">
                     <div>
-                      <p className="text-lg font-bold text-green-600">+${bonus.amount}</p>
+                      <p className="text-lg font-bold text-green-600">+AED {bonus.amount}</p>
                       <div className="flex items-center">
                         {getStatusIcon(bonus.status)}
                       </div>

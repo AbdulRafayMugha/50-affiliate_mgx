@@ -188,7 +188,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ onNavigate }) =
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Revenue</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  ${stats?.totalSales.toLocaleString() || '0'}
+                  AED {stats?.totalSales.toLocaleString() || '0'}
                 </p>
                 <p className="text-sm text-green-600 flex items-center mt-1">
                   <TrendingUp className="h-4 w-4 mr-1" />
@@ -242,7 +242,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ onNavigate }) =
               <div>
                 <p className="text-sm font-medium text-gray-600">Pending Payouts</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  ${stats?.pendingPayouts.toLocaleString() || '0'}
+                  AED {stats?.pendingPayouts.toLocaleString() || '0'}
                 </p>
                 <p className="text-sm text-orange-600 flex items-center mt-1">
                   <Activity className="h-4 w-4 mr-1" />
@@ -295,7 +295,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ onNavigate }) =
                       <ChartTooltipContent
                         payload={payload}
                         label={payload[0]?.payload?.name}
-                        formatter={(value) => [`$${value}`, getMetricLabel()]}
+                        formatter={(value) => [`AED ${value}`, getMetricLabel()]}
                       />
                     );
                   }}
@@ -383,7 +383,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ onNavigate }) =
                     style={{ backgroundColor: item.color }}
                   ></div>
                 </div>
-                <p className="text-2xl font-bold text-gray-900">${item.revenue.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-gray-900">AED {item.revenue.toLocaleString()}</p>
                 <p className="text-sm text-gray-600">{item.affiliates} affiliates</p>
                 <Progress 
                   value={(item.revenue / 135000) * 100} 

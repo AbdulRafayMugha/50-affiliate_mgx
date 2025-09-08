@@ -30,7 +30,7 @@ export const getDashboard = asyncHandler(async (req: AuthRequest, res: Response)
   let currentTier = 'Bronze';
   let nextTier = 'Silver';
   let progress = 0;
-  let requirement = 'Earn $500 to reach Silver';
+  let requirement = 'Earn AED 500 to reach Silver';
   
   if (totalEarnings >= 5000) {
     currentTier = 'Platinum';
@@ -41,12 +41,12 @@ export const getDashboard = asyncHandler(async (req: AuthRequest, res: Response)
     currentTier = 'Gold';
     nextTier = 'Platinum';
     progress = ((totalEarnings - 2000) / 3000) * 100;
-    requirement = 'Earn $5,000 total to reach Platinum';
+    requirement = 'Earn AED 5,000 total to reach Platinum';
   } else if (totalEarnings >= 500) {
     currentTier = 'Silver';
     nextTier = 'Gold';
     progress = ((totalEarnings - 500) / 1500) * 100;
-    requirement = 'Earn $2,000 total to reach Gold';
+    requirement = 'Earn AED 2,000 total to reach Gold';
   } else {
     progress = (totalEarnings / 500) * 100;
   }

@@ -318,7 +318,7 @@ export class ReportModel {
       { metric: 'Active Coordinators', value: activeCoordinators, description: 'Number of active coordinators' },
       { metric: 'Total Affiliates', value: totalAffiliates, description: 'Total affiliates across all networks' },
       { metric: 'Active Affiliates', value: activeAffiliates, description: 'Active affiliates across all networks' },
-      { metric: 'Total Commissions', value: `$${totalCommissions.toFixed(2)}`, description: 'Total commissions generated' },
+      { metric: 'Total Commissions', value: `AED ${totalCommissions.toFixed(2)}`, description: 'Total commissions generated' },
       { metric: 'Total Referrals', value: totalReferrals, description: 'Total referrals from all networks' },
       { metric: 'Average Affiliates per Coordinator', value: totalCoordinators > 0 ? (totalAffiliates / totalCoordinators).toFixed(1) : '0', description: 'Average network size' },
       { metric: 'Report Generated', value: new Date().toLocaleDateString(), description: 'Date this report was generated' }
@@ -378,8 +378,8 @@ export class ReportModel {
             affiliate_status: 'N/A',
             affiliate_tier: 'N/A',
             referral_count: 0,
-            commission_earned: '$0.00',
-            pending_commissions: '$0.00',
+            commission_earned: 'AED 0.00',
+            pending_commissions: 'AED 0.00',
             joined_date: 'N/A'
           });
           
@@ -404,8 +404,8 @@ export class ReportModel {
               affiliate_status: affiliate.user.status,
               affiliate_tier: affiliate.tier.name,
               referral_count: affiliate.totalReferrals,
-              commission_earned: `$${affiliate.totalEarnings.toFixed(2)}`,
-              pending_commissions: `$${affiliate.pendingEarnings.toFixed(2)}`,
+              commission_earned: `AED ${affiliate.totalEarnings.toFixed(2)}`,
+              pending_commissions: `AED ${affiliate.pendingEarnings.toFixed(2)}`,
               joined_date: new Date(affiliate.createdAt).toLocaleDateString()
             });
             

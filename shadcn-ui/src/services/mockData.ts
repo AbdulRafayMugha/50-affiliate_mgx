@@ -31,7 +31,7 @@ export class DataService {
           currentTier: 'Silver',
           nextTier: 'Gold',
           progress: 72,
-          requirement: 'Earn $2,000 total to reach Gold'
+          requirement: 'Earn AED 2,000 total to reach Gold'
         }
       };
     }

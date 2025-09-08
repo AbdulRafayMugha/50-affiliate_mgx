@@ -199,13 +199,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
         />
         <StatCard
           title="Total Sales"
-          value={`$${stats.totalSales.toLocaleString()}`}
+          value={`AED ${stats.totalSales.toLocaleString()}`}
           change="+15.8% from last month"
           icon={DollarSign}
         />
         <StatCard
           title="Pending Payouts"
-          value={`$${stats.pendingPayouts.toLocaleString()}`}
+          value={`AED ${stats.pendingPayouts.toLocaleString()}`}
           change={`${stats.pendingPayouts} transactions`}
           icon={CreditCard}
         />
@@ -235,7 +235,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
                   </div>
                   <div className="flex items-center space-x-3">
                     <div className="text-right">
-                      <p className="font-semibold">${affiliate.totalEarnings.toLocaleString()}</p>
+                      <p className="font-semibold">AED {affiliate.totalEarnings.toLocaleString()}</p>
                       <p className="text-sm text-green-600">
                         {affiliate.conversionRate}% conversion
                       </p>

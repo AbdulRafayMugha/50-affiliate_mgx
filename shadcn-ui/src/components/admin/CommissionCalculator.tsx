@@ -28,21 +28,28 @@ const CommissionCalculator: React.FC<CommissionCalculatorProps> = ({ commissionL
   const [saleAmount, setSaleAmount] = useState<number>(100);
   const [numReferrals, setNumReferrals] = useState<number>(1);
 
-  const activeLevels = commissionLevels.filter(level => level.isActive);
+  const activeLevels = (commissionLevels || []).filter(level => level.isActive);
 
   const calculateCommissions = () => {
-    return activeLevels.map(level => ({
-      level: level.level,
-      percentage: level.percentage,
-      commission: (saleAmount * level.percentage) / 100,
-      totalForReferrals: ((saleAmount * level.percentage) / 100) * numReferrals,
-      description: level.description
-    }));
+    return activeLevels.map(level => {
+      const percentage = typeof level.percentage === 'string' ? parseFloat(level.percentage) : (level.percentage || 0);
+      const safePercentage = isNaN(percentage) ? 0 : percentage;
+      return {
+        level: level.level,
+        percentage: safePercentage,
+        commission: (saleAmount * safePercentage) / 100,
+        totalForReferrals: ((saleAmount * safePercentage) / 100) * numReferrals,
+        description: level.description
+      };
+    });
   };
 
   const totalCommission = calculateCommissions().reduce((sum, item) => sum + item.commission, 0);
   const totalCommissionForReferrals = calculateCommissions().reduce((sum, item) => sum + item.totalForReferrals, 0);
-  const totalPercentage = activeLevels.reduce((sum, level) => sum + level.percentage, 0);
+  const totalPercentage = activeLevels.reduce((sum, level) => {
+    const percentage = typeof level.percentage === 'string' ? parseFloat(level.percentage) : (level.percentage || 0);
+    return sum + (isNaN(percentage) ? 0 : percentage);
+  }, 0);
 
   const scenarios = [
     { name: 'Small Sale', amount: 50, referrals: 1 },
@@ -68,7 +75,7 @@ const CommissionCalculator: React.FC<CommissionCalculatorProps> = ({ commissionL
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-700">Sale Amount ($)</label>
+                <label className="text-sm font-medium text-gray-700">Sale Amount (AED)</label>
                 <Input
                   type="number"
                   value={saleAmount}
@@ -93,14 +100,35 @@ const CommissionCalculator: React.FC<CommissionCalculatorProps> = ({ commissionL
               <div className="p-4 bg-blue-50 rounded-lg">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-gray-700">Total Commission</span>
-                  <span className="text-2xl font-bold text-blue-600">${totalCommission.toFixed(2)}</span>
+                  <span className="text-2xl font-bold text-blue-600">AED {(() => {
+                    try {
+                      const value = Number(totalCommission);
+                      return isNaN(value) ? '0.00' : value.toFixed(2);
+                    } catch (error) {
+                      return '0.00';
+                    }
+                  })()}</span>
                 </div>
                 <div className="flex items-center justify-between mt-2">
                   <span className="text-sm text-gray-600">For {numReferrals} referral(s)</span>
-                  <span className="text-lg font-semibold text-green-600">${totalCommissionForReferrals.toFixed(2)}</span>
+                  <span className="text-lg font-semibold text-green-600">AED {(() => {
+                    try {
+                      const value = Number(totalCommissionForReferrals);
+                      return isNaN(value) ? '0.00' : value.toFixed(2);
+                    } catch (error) {
+                      return '0.00';
+                    }
+                  })()}</span>
                 </div>
                 <Progress value={(totalPercentage / 50) * 100} className="mt-2" />
-                <p className="text-xs text-gray-500 mt-1">Total: {totalPercentage.toFixed(1)}% commission rate</p>
+                <p className="text-xs text-gray-500 mt-1">Total: {(() => {
+                  try {
+                    const value = Number(totalPercentage);
+                    return isNaN(value) ? '0.0' : value.toFixed(1);
+                  } catch (error) {
+                    return '0.0';
+                  }
+                })()}% commission rate</p>
               </div>
             </div>
           </div>
@@ -128,8 +156,8 @@ const CommissionCalculator: React.FC<CommissionCalculatorProps> = ({ commissionL
                     <span className="font-medium text-gray-900">{item.percentage}%</span>
                   </div>
                   <div className="text-right">
-                    <div className="text-lg font-bold text-gray-900">${item.commission.toFixed(2)}</div>
-                    <div className="text-sm text-gray-600">${item.totalForReferrals.toFixed(2)} total</div>
+                    <div className="text-lg font-bold text-gray-900">AED {item.commission.toFixed(2)}</div>
+                    <div className="text-sm text-gray-600">AED {item.totalForReferrals.toFixed(2)} total</div>
                   </div>
                 </div>
                 <p className="text-sm text-gray-600">{item.description}</p>
@@ -182,7 +210,7 @@ const CommissionCalculator: React.FC<CommissionCalculatorProps> = ({ commissionL
                   <div className="space-y-1">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Sale:</span>
-                      <span className="font-medium">${scenario.amount}</span>
+                      <span className="font-medium">AED {scenario.amount}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Referrals:</span>
@@ -190,7 +218,7 @@ const CommissionCalculator: React.FC<CommissionCalculatorProps> = ({ commissionL
                     </div>
                     <div className="flex justify-between text-sm font-semibold text-green-600">
                       <span>Total:</span>
-                      <span>${totalScenarioCommission.toFixed(2)}</span>
+                      <span>AED {totalScenarioCommission.toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
@@ -215,7 +243,14 @@ const CommissionCalculator: React.FC<CommissionCalculatorProps> = ({ commissionL
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center p-4 bg-green-50 rounded-lg">
               <div className="text-2xl font-bold text-green-600 mb-1">
-                {totalPercentage.toFixed(1)}%
+                {(() => {
+                  try {
+                    const value = Number(totalPercentage);
+                    return isNaN(value) ? '0.0' : value.toFixed(1);
+                  } catch (error) {
+                    return '0.0';
+                  }
+                })()}%
               </div>
               <div className="text-sm text-green-700">Total Commission Rate</div>
               <div className="text-xs text-green-600 mt-1">
@@ -225,9 +260,9 @@ const CommissionCalculator: React.FC<CommissionCalculatorProps> = ({ commissionL
 
             <div className="text-center p-4 bg-blue-50 rounded-lg">
               <div className="text-2xl font-bold text-blue-600 mb-1">
-                ${(saleAmount * totalPercentage / 100).toFixed(2)}
+                AED {(saleAmount * totalPercentage / 100).toFixed(2)}
               </div>
-              <div className="text-sm text-blue-700">Commission per $100</div>
+              <div className="text-sm text-blue-700">Commission per AED 100</div>
               <div className="text-xs text-blue-600 mt-1">
                 For single referral
               </div>

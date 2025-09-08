@@ -53,7 +53,8 @@ const CommissionManagement: React.FC = () => {
     commissionLevels, 
     commissionSettings, 
     loading: contextLoading, 
-    updateCommissionLevel: contextUpdateLevel 
+    updateCommissionLevel: contextUpdateLevel,
+    refreshCommissions
   } = useCommission();
 
   const [settings, setSettings] = useState<CommissionSettings>({
@@ -74,19 +75,27 @@ const CommissionManagement: React.FC = () => {
   const [isLocked, setIsLocked] = useState(false);
 
   // Calculate total commission percentage
-  const totalCommissionPercentage = commissionLevels
+  const totalCommissionPercentage = (commissionLevels || [])
     .filter(level => level.isActive)
-    .reduce((sum, level) => sum + level.percentage, 0);
+    .reduce((sum, level) => {
+      const percentage = typeof level.percentage === 'string' ? parseFloat(level.percentage) : (level.percentage || 0);
+      return sum + (isNaN(percentage) ? 0 : percentage);
+    }, 0);
+
 
   // Calculate potential earnings for different scenarios
   const calculatePotentialEarnings = (saleAmount: number) => {
-    return commissionLevels
+    return (commissionLevels || [])
       .filter(level => level.isActive)
-      .map(level => ({
-        level: level.level,
-        commission: (saleAmount * level.percentage) / 100,
-        percentage: level.percentage
-      }));
+      .map(level => {
+        const percentage = typeof level.percentage === 'string' ? parseFloat(level.percentage) : (level.percentage || 0);
+        const safePercentage = isNaN(percentage) ? 0 : percentage;
+        return {
+          level: level.level,
+          commission: (saleAmount * safePercentage) / 100,
+          percentage: safePercentage
+        };
+      });
   };
 
   const handleSaveLevel = async (levelId: string) => {
@@ -140,7 +149,7 @@ const CommissionManagement: React.FC = () => {
         updatedAt: new Date().toISOString()
       };
 
-      setCommissionLevels(prev => [...prev, newCommissionLevel]);
+      await refreshCommissions();
       setShowAddForm(false);
       setNewLevel({});
       toast({
@@ -159,7 +168,7 @@ const CommissionManagement: React.FC = () => {
   };
 
   const handleDeleteLevel = async (levelId: string) => {
-    if (commissionLevels.length <= 1) {
+    if ((commissionLevels || []).length <= 1) {
       toast({
         title: "Error",
         description: "Cannot delete the last commission level",
@@ -173,7 +182,7 @@ const CommissionManagement: React.FC = () => {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      setCommissionLevels(prev => prev.filter(level => level.id !== levelId));
+      await refreshCommissions();
       toast({
         title: "Success",
         description: "Commission level deleted successfully",
@@ -195,13 +204,7 @@ const CommissionManagement: React.FC = () => {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      setCommissionLevels(prev => 
-        prev.map(level => 
-          level.id === levelId 
-            ? { ...level, isActive: !level.isActive, updatedAt: new Date().toISOString() }
-            : level
-        )
-      );
+      await refreshCommissions();
       
       toast({
         title: "Success",
@@ -240,47 +243,26 @@ const CommissionManagement: React.FC = () => {
     }
   };
 
-  const handleResetToDefaults = () => {
-    setCommissionLevels([
-      {
-        id: '1',
-        level: 1,
-        percentage: 15,
-        description: 'Direct referrals commission',
-        isActive: true,
-        minReferrals: 0,
-        maxReferrals: 999,
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: new Date().toISOString()
-      },
-      {
-        id: '2',
-        level: 2,
-        percentage: 5,
-        description: 'Second level referrals commission',
-        isActive: true,
-        minReferrals: 0,
-        maxReferrals: 999,
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: new Date().toISOString()
-      },
-      {
-        id: '3',
-        level: 3,
-        percentage: 2.5,
-        description: 'Third level referrals commission',
-        isActive: true,
-        minReferrals: 0,
-        maxReferrals: 999,
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: new Date().toISOString()
-      }
-    ]);
-    
-    toast({
-      title: "Success",
-      description: "Commission levels reset to defaults",
-    });
+  const handleResetToDefaults = async () => {
+    setLoading(true);
+    try {
+      // Call the API to reset to defaults
+      await commissionAPI.resetToDefaults();
+      await refreshCommissions();
+      
+      toast({
+        title: "Success",
+        description: "Commission levels reset to defaults",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to reset commission levels",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -326,11 +308,19 @@ const CommissionManagement: React.FC = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Commission</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {totalCommissionPercentage.toFixed(1)}%
+                  {(() => {
+                    try {
+                      const value = Number(totalCommissionPercentage);
+                      return isNaN(value) ? '0.0' : value.toFixed(1);
+                    } catch (error) {
+                      console.error('Error formatting totalCommissionPercentage:', error);
+                      return '0.0';
+                    }
+                  })()}%
                 </p>
                 <p className="text-sm text-blue-600 flex items-center mt-1">
                   <TrendingUp className="h-4 w-4 mr-1" />
-                  {commissionLevels.filter(l => l.isActive).length} active levels
+                  {(commissionLevels || []).filter(l => l.isActive).length} active levels
                 </p>
               </div>
               <DollarSign className="h-8 w-8 text-green-600" />
@@ -344,11 +334,11 @@ const CommissionManagement: React.FC = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Active Levels</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {commissionLevels.filter(l => l.isActive).length}
+                  {(commissionLevels || []).filter(l => l.isActive).length}
                 </p>
                 <p className="text-sm text-green-600 flex items-center mt-1">
                   <CheckCircle className="h-4 w-4 mr-1" />
-                  {commissionLevels.length} total levels
+                  {(commissionLevels || []).length} total levels
                 </p>
               </div>
               <Settings className="h-8 w-8 text-blue-600" />
@@ -422,7 +412,7 @@ const CommissionManagement: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {commissionLevels.map((level) => (
+              {(commissionLevels || []).map((level) => (
                 <div key={level.id} className="border rounded-lg p-4">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center space-x-3">
@@ -464,7 +454,7 @@ const CommissionManagement: React.FC = () => {
                         variant="outline"
                         size="sm"
                         onClick={() => handleDeleteLevel(level.id)}
-                        disabled={loading || isLocked || commissionLevels.length <= 1}
+                        disabled={loading || isLocked || (commissionLevels || []).length <= 1}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
