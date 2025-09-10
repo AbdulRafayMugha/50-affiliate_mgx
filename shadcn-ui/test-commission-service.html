@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Commission Service Test</title>
+</head>
+<body>
+    <h1>Commission Service Test</h1>
+    <div id="result"></div>
+    
+    <script type="module">
+        // Test the commission service
+        const API_BASE_URL = 'http://localhost:3001/api';
+        
+        async function testCommissionService() {
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                console.log('Testing commission service...');
+                
+                const response = await fetch(`${API_BASE_URL}/commission/current-rates`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <h2>✅ Commission Service Test Successful!</h2>
+                    <p><strong>Level 1:</strong> ${data.level1}%</p>
+                    <p><strong>Level 2:</strong> ${data.level2}%</p>
+                    <p><strong>Level 3:</strong> ${data.level3}%</p>
+                    <p><strong>Last Updated:</strong> ${new Date(data.lastUpdated).toLocaleString()}</p>
+                `;
+                
+                console.log('Commission rates:', data);
+                
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <h2>❌ Commission Service Test Failed</h2>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                    <p>Make sure the server is running on http://localhost:3001</p>
+                `;
+                console.error('Error:', error);
+            }
+        }
+        
+        // Run the test
+        testCommissionService();
+    </script>
+</body>
+</html>
+

@@ -3,13 +3,17 @@ import {
   getCommissionLevels,
   getCommissionLevel,
   getCommissionSettings,
-  calculateCommissions
+  calculateCommissions,
+  getCurrentCommissionRates
 } from '../controllers/commissionController';
 import { authenticateToken } from '../middleware/auth';
 
 const router = Router();
 
-// Public commission routes - accessible to all authenticated users
+// Public route for terms and conditions (no authentication required)
+router.get('/current-rates', getCurrentCommissionRates);
+
+// Commission routes - accessible to all authenticated users
 router.use(authenticateToken);
 
 // Commission Level Routes (Read-only for all users)

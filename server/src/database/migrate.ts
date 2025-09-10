@@ -25,6 +25,10 @@ CREATE TABLE IF NOT EXISTS users (
   tier VARCHAR(50) DEFAULT 'Bronze' CHECK (tier IN ('Bronze', 'Silver', 'Gold', 'Platinum')),
   is_active BOOLEAN DEFAULT TRUE,
   email_verified BOOLEAN DEFAULT FALSE,
+  email_verification_token VARCHAR(255),
+  email_verification_expires TIMESTAMP WITH TIME ZONE,
+  password_reset_token VARCHAR(255),
+  password_reset_expires TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -191,6 +195,7 @@ CREATE TABLE IF NOT EXISTS commission_settings (
 DROP TRIGGER IF EXISTS set_timestamp_commission_settings ON commission_settings;
 CREATE TRIGGER set_timestamp_commission_settings BEFORE UPDATE ON commission_settings FOR EACH ROW EXECUTE PROCEDURE trigger_set_timestamp();
 `;
+
 
 const runMigrations = async () => {
   await initDatabase({ isMigration: true });

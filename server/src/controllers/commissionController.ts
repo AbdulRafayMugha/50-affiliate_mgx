@@ -229,3 +229,35 @@ export const calculateCommissions = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to calculate commissions' });
   }
 };
+
+// Get current commission rates for terms and conditions (public endpoint)
+export const getCurrentCommissionRates = async (req: Request, res: Response) => {
+  try {
+    // Get the actual commission levels from the database
+    const levels = await CommissionLevelModel.getAll();
+    const activeLevels = levels.filter(level => level.isActive);
+    
+    if (activeLevels.length === 0) {
+      return res.status(404).json({ error: 'No active commission levels found' });
+    }
+    
+    // Create a map of level to percentage
+    const levelMap = new Map();
+    activeLevels.forEach(level => {
+      levelMap.set(level.level, level.percentage);
+    });
+    
+    // Return the current commission rates from actual levels
+    const commissionRates = {
+      level1: levelMap.get(1) || 15,
+      level2: levelMap.get(2) || 5,
+      level3: levelMap.get(3) || 2.5,
+      lastUpdated: new Date().toISOString() // Use current time since we're getting from multiple records
+    };
+    
+    res.json(commissionRates);
+  } catch (error) {
+    console.error('Error fetching commission rates:', error);
+    res.status(500).json({ error: 'Failed to fetch commission rates' });
+  }
+};

@@ -10,7 +10,11 @@ import {
   createBankDetails,
   updateBankDetails,
   deleteBankDetails,
-  setDefaultBankDetails
+  setDefaultBankDetails,
+  verifyEmail,
+  resendVerification,
+  requestPasswordReset,
+  resetPassword
 } from '../controllers/authController';
 import { authenticateToken } from '../middleware/auth';
 import { validate, schemas } from '../middleware/validation';
@@ -20,6 +24,14 @@ const router = Router();
 // Public routes
 router.post('/register', validate(schemas.register), register);
 router.post('/login', validate(schemas.login), login);
+
+// Email verification routes
+router.post('/verify-email', verifyEmail);
+router.post('/resend-verification', resendVerification);
+
+// Password reset routes
+router.post('/forgot-password', requestPasswordReset);
+router.post('/reset-password', resetPassword);
 
 // Protected routes
 router.get('/profile', authenticateToken, getProfile);

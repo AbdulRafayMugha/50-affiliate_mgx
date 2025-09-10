@@ -14,6 +14,10 @@ export interface User {
   tier: 'Bronze' | 'Silver' | 'Gold' | 'Platinum';
   is_active: boolean;
   email_verified: boolean;
+  email_verification_token?: string;
+  email_verification_expires?: Date;
+  password_reset_token?: string;
+  password_reset_expires?: Date;
   created_at: Date;
   updated_at: Date;
 }
@@ -26,6 +30,8 @@ export interface CreateUserInput {
   referrer_code?: string;
   coordinator_id?: string;
   created_by_coordinator?: string; // ID of coordinator who created this user
+  email_verification_token?: string;
+  email_verification_expires?: Date;
 }
 
 export class UserModel {
@@ -160,10 +166,10 @@ export class UserModel {
       
       // Create user
       const { rows } = await client.query(
-        `INSERT INTO users (email, password_hash, name, role, referrer_id, coordinator_id, referral_code)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
-         RETURNING id, email, name, role, referrer_id, coordinator_id, referral_code, tier, is_active, email_verified, created_at, updated_at`,
-        [input.email, password_hash, input.name, input.role || 'affiliate', referrer_id, coordinatorId, referral_code]
+        `INSERT INTO users (email, password_hash, name, role, referrer_id, coordinator_id, referral_code, email_verification_token, email_verification_expires)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         RETURNING id, email, name, role, referrer_id, coordinator_id, referral_code, tier, is_active, email_verified, email_verification_token, email_verification_expires, created_at, updated_at`,
+        [input.email, password_hash, input.name, input.role || 'affiliate', referrer_id, coordinatorId, referral_code, input.email_verification_token, input.email_verification_expires]
       );
       
       const user = rows[0];
@@ -607,5 +613,64 @@ export class UserModel {
     `, [userId]);
     
     return parseInt(rows[0].count);
+  }
+
+  // Find user by email verification token
+  static async findByVerificationToken(token: string): Promise<User | null> {
+    const { rows } = await pool.query(
+      'SELECT * FROM users WHERE email_verification_token = $1',
+      [token]
+    );
+    return rows[0] || null;
+  }
+
+  // Find user by password reset token
+  static async findByPasswordResetToken(token: string): Promise<User | null> {
+    const { rows } = await pool.query(
+      'SELECT * FROM users WHERE password_reset_token = $1',
+      [token]
+    );
+    return rows[0] || null;
+  }
+
+  // Verify user email
+  static async verifyEmail(userId: string): Promise<void> {
+    await pool.query(
+      'UPDATE users SET email_verified = true, email_verification_token = NULL, email_verification_expires = NULL WHERE id = $1',
+      [userId]
+    );
+  }
+
+  // Update verification token
+  static async updateVerificationToken(userId: string, token: string, expires: Date): Promise<void> {
+    await pool.query(
+      'UPDATE users SET email_verification_token = $1, email_verification_expires = $2 WHERE id = $3',
+      [token, expires, userId]
+    );
+  }
+
+  // Update password reset token
+  static async updatePasswordResetToken(userId: string, token: string, expires: Date): Promise<void> {
+    await pool.query(
+      'UPDATE users SET password_reset_token = $1, password_reset_expires = $2 WHERE id = $3',
+      [token, expires, userId]
+    );
+  }
+
+  // Update password
+  static async updatePassword(userId: string, newPassword: string): Promise<void> {
+    const password_hash = await bcrypt.hash(newPassword, 12);
+    await pool.query(
+      'UPDATE users SET password_hash = $1 WHERE id = $2',
+      [password_hash, userId]
+    );
+  }
+
+  // Clear password reset token
+  static async clearPasswordResetToken(userId: string): Promise<void> {
+    await pool.query(
+      'UPDATE users SET password_reset_token = NULL, password_reset_expires = NULL WHERE id = $1',
+      [userId]
+    );
   }
 }

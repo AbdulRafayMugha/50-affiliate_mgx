@@ -5,7 +5,9 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Alert, AlertDescription } from '../ui/alert';
-import { Loader2 } from 'lucide-react';
+import { Checkbox } from '../ui/checkbox';
+import TermsModal from '../ui/terms-modal';
+import { Loader2, FileText } from 'lucide-react';
 
 interface RegisterFormProps {
   onToggleMode: () => void;
@@ -21,6 +23,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleMode }) => {
     referralCode: ''
   });
   const [error, setError] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -32,6 +35,11 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleMode }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    
+    if (!termsAccepted) {
+      setError('You must accept the Terms and Conditions to continue');
+      return;
+    }
     
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
@@ -143,13 +151,35 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleMode }) => {
             )}
           </div>
 
+          {/* Terms and Conditions Checkbox */}
+          <div className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg border">
+            <Checkbox
+              id="terms"
+              checked={termsAccepted}
+              onCheckedChange={(checked) => setTermsAccepted(checked as boolean)}
+              className="mt-0.5"
+            />
+            <div className="flex-1">
+              <Label htmlFor="terms" className="text-sm text-gray-700 cursor-pointer">
+                I agree to the{' '}
+                <TermsModal>
+                  <span className="text-blue-600 hover:text-blue-800 underline font-medium inline-flex items-center">
+                    <FileText className="h-3 w-3 mr-1" />
+                    Terms and Conditions
+                  </span>
+                </TermsModal>
+                {' '}and understand that I will receive a copy via email after registration.
+              </Label>
+            </div>
+          </div>
+
           {error && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
 
-          <Button type="submit" className="w-full" disabled={isLoading}>
+          <Button type="submit" className="w-full" disabled={isLoading || !termsAccepted}>
             {isLoading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
