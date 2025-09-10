@@ -3,16 +3,19 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.EmailInviteModel = void 0;
 const init_1 = require("../database/init");
 class EmailInviteModel {
-    static async create(affiliateId, email, name) {
+    static async create(affiliateId, email, name, phoneNumber) {
         try {
             // Set expiration date to 30 days from now
             const now = new Date();
             const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days
+            // Handle empty string names and phone numbers
+            const cleanName = name && name.trim() ? name.trim() : null;
+            const cleanPhoneNumber = phoneNumber && phoneNumber.trim() ? phoneNumber.trim() : null;
             const { rows } = await init_1.pool.query(`
-        INSERT INTO email_referrals (affiliate_id, email, name, invited_at, expires_at, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        INSERT INTO email_referrals (affiliate_id, email, name, phone_number, invited_at, expires_at, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         RETURNING *
-      `, [affiliateId, email, name, now.toISOString(), expiresAt.toISOString(), now.toISOString(), now.toISOString()]);
+      `, [affiliateId, email, cleanName, cleanPhoneNumber, now.toISOString(), expiresAt.toISOString(), now.toISOString(), now.toISOString()]);
             const createdRecord = rows[0];
             if (!createdRecord) {
                 throw new Error('Failed to create email referral');

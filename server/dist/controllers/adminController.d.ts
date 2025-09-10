@@ -1,5 +1,6 @@
 import { Response } from 'express';
 export declare const getDashboard: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
+export declare const getAnalytics: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
 export declare const getTopAffiliates: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
 export declare const getAffiliates: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
 export declare const getTransactions: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;

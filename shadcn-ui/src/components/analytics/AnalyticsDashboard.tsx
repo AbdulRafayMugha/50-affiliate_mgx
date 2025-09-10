@@ -24,9 +24,9 @@ import {
   ChartTooltip, 
   ChartTooltipContent
 } from '../ui/chart';
-import { BarChart, Bar, LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { AnalyticsData, DashboardStats } from '../../types';
-import { DataService } from '../../services/mockData';
+import { adminAPI } from '../../services/api';
 import { toast } from '../../hooks/use-toast';
 
 interface AnalyticsDashboardProps {
@@ -48,12 +48,67 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ onNavigate }) =
   const loadAnalyticsData = async () => {
     try {
       setLoading(true);
-      const [analyticsData, statsData] = await Promise.all([
-        DataService.getAnalyticsData(),
-        DataService.getDashboardStats()
+      const [analyticsResponse, dashboardResponse] = await Promise.all([
+        adminAPI.getAnalytics(timeRange),
+        adminAPI.getDashboard()
       ]);
-      setAnalytics(analyticsData);
-      setStats(statsData);
+      
+      const analyticsData = analyticsResponse.data || {};
+      const dashboardData = dashboardResponse.data || {};
+      
+      
+      // Transform the real data into the expected format with null checks
+      const transformedAnalytics: AnalyticsData = {
+        sales: (analyticsData.revenueTrends || []).map((item: any) => ({
+          date: new Date(item.date).toLocaleDateString(),
+          revenue: parseFloat(item.revenue) || 0,
+          transactions: parseInt(item.transactions) || 0
+        })),
+        commissions: (analyticsData.commissionTrends || []).map((item: any) => ({
+          date: new Date(item.date).toLocaleDateString(),
+          commissions: parseFloat(item.commissions) || 0,
+          count: parseInt(item.commission_count) || 0
+        })),
+        registrations: (analyticsData.registrationTrends || []).map((item: any) => ({
+          date: new Date(item.date).toLocaleDateString(),
+          registrations: parseInt(item.registrations) || 0
+        })),
+        topAffiliates: (analyticsData.topAffiliates || []).map((affiliate: any) => ({
+          id: affiliate.id,
+          name: affiliate.name,
+          email: affiliate.email,
+          totalCommissions: parseFloat(affiliate.total_commissions) || 0,
+          totalTransactions: parseInt(affiliate.total_transactions) || 0,
+          totalRevenue: parseFloat(affiliate.total_revenue) || 0
+        })),
+        commissionLevels: (analyticsData.commissionLevels || []).map((level: any) => ({
+          level: parseInt(level.level) || 0,
+          count: parseInt(level.count) || 0,
+          totalAmount: parseFloat(level.total_amount) || 0
+        })),
+        monthlyRevenue: (analyticsData.monthlyRevenue || []).map((month: any) => ({
+          month: new Date(month.month).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+          revenue: parseFloat(month.revenue) || 0,
+          transactions: parseInt(month.transactions) || 0
+        }))
+      };
+      
+      const transformedStats: DashboardStats = {
+        totalAffiliates: parseInt(dashboardData.stats.totalAffiliates) || 0,
+        activeAffiliates: parseInt(dashboardData.stats.activeAffiliates) || 0,
+        totalSales: parseFloat(dashboardData.stats.totalRevenue) || 0,
+        totalCommissions: parseFloat(dashboardData.stats.totalCommissionsPaid) || 0,
+        pendingPayouts: parseFloat(dashboardData.stats.pendingCommissions) || 0,
+        conversionRate: parseFloat(dashboardData.stats.conversionRate) || 0,
+        revenueGrowth: parseFloat(dashboardData.stats.revenueGrowth) || 0,
+        newSignupsToday: parseInt(dashboardData.stats.newSignupsToday) || 0,
+        revenueGenerated: parseFloat(dashboardData.stats.totalRevenue) || 0,
+        commissionTrends: transformedAnalytics.commissions,
+        conversionTrends: transformedAnalytics.registrations
+      };
+      
+      setAnalytics(transformedAnalytics);
+      setStats(transformedStats);
     } catch (error) {
       console.error('Error loading analytics data:', error);
       toast({
@@ -91,13 +146,13 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ onNavigate }) =
     
     switch (selectedMetric) {
       case 'revenue':
-        return analytics.sales;
+        return analytics.sales || [];
       case 'commissions':
-        return analytics.commissions;
+        return analytics.commissions || [];
       case 'registrations':
-        return analytics.registrations;
+        return analytics.registrations || [];
       default:
-        return analytics.sales;
+        return analytics.sales || [];
     }
   };
 
@@ -110,7 +165,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ onNavigate }) =
     }
   };
 
-  if (loading) {
+  if (loading || !analytics || !stats) {
     return (
       <div className="p-6 flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -277,36 +332,36 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ onNavigate }) =
             }}
             className="h-[400px]"
           >
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={getMetricData().labels.map((label, index) => ({
-                  name: label,
-                  [getMetricLabel()]: getMetricData().datasets[0]?.data[index] || 0
-                }))}
-                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <ChartTooltip
-                  content={({ active, payload }) => {
-                    if (!active || !payload) return null;
-                    return (
-                      <ChartTooltipContent
-                        payload={payload}
-                        label={payload[0]?.payload?.name}
-                        formatter={(value) => [`AED ${value}`, getMetricLabel()]}
-                      />
-                    );
-                  }}
-                />
-                <Bar 
-                  dataKey={getMetricLabel()} 
-                  fill={selectedMetric === 'revenue' ? '#10b981' : 
-                        selectedMetric === 'commissions' ? '#3b82f6' : '#8b5cf6'}
-                />
-              </BarChart>
-            </ResponsiveContainer>
+            <BarChart
+              width={800}
+              height={400}
+              data={(getMetricData().labels || []).map((label, index) => ({
+                name: label,
+                [getMetricLabel()]: getMetricData().datasets[0]?.data[index] || 0
+              }))}
+              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <ChartTooltip
+                content={({ active, payload }) => {
+                  if (!active || !payload) return null;
+                  return (
+                    <ChartTooltipContent
+                      payload={payload}
+                      label={payload[0]?.payload?.name}
+                      formatter={(value) => [`AED ${value}`, getMetricLabel()]}
+                    />
+                  );
+                }}
+              />
+              <Bar 
+                dataKey={getMetricLabel()} 
+                fill={selectedMetric === 'revenue' ? '#10b981' : 
+                      selectedMetric === 'commissions' ? '#3b82f6' : '#8b5cf6'}
+              />
+            </BarChart>
           </ChartContainer>
         </CardContent>
       </Card>

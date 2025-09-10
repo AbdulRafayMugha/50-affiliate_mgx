@@ -10,6 +10,7 @@ exports.adminRoutes = router;
 // All routes require authentication and admin role
 router.use(auth_1.authenticateToken, auth_1.requireAdmin);
 router.get('/dashboard', adminController_1.getDashboard);
+router.get('/analytics', adminController_1.getAnalytics);
 router.get('/top-affiliates', adminController_1.getTopAffiliates);
 router.get('/affiliates', adminController_1.getAffiliates);
 router.get('/affiliates/:affiliateId', adminController_1.getAffiliateDetails);

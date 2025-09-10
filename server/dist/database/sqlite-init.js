@@ -150,6 +150,7 @@ const runSQLiteMigrations = async () => {
         affiliate_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         email TEXT NOT NULL,
         name TEXT,
+        phone_number TEXT,
         status TEXT NOT NULL DEFAULT 'invited' CHECK (status IN ('invited', 'confirmed', 'converted', 'expired')),
         invited_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         confirmed_at DATETIME,

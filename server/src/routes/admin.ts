@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   getDashboard,
+  getAnalytics,
   getAffiliates,
   getTransactions,
   getPendingCommissions,
@@ -42,6 +43,7 @@ const router = Router();
 router.use(authenticateToken, requireAdmin);
 
 router.get('/dashboard', getDashboard);
+router.get('/analytics', getAnalytics);
 router.get('/top-affiliates', getTopAffiliates);
 router.get('/affiliates', getAffiliates);
 router.get('/affiliates/:affiliateId', getAffiliateDetails);

@@ -9,4 +9,8 @@ export declare const getBankDetails: (req: Request, res: Response, next: import(
 export declare const createBankDetails: (req: Request, res: Response, next: import("express").NextFunction) => void;
 export declare const updateBankDetails: (req: Request, res: Response, next: import("express").NextFunction) => void;
 export declare const deleteBankDetails: (req: Request, res: Response, next: import("express").NextFunction) => void;
+export declare const verifyEmail: (req: Request, res: Response, next: import("express").NextFunction) => void;
+export declare const resendVerification: (req: Request, res: Response, next: import("express").NextFunction) => void;
+export declare const requestPasswordReset: (req: Request, res: Response, next: import("express").NextFunction) => void;
+export declare const resetPassword: (req: Request, res: Response, next: import("express").NextFunction) => void;
 export declare const setDefaultBankDetails: (req: Request, res: Response, next: import("express").NextFunction) => void;

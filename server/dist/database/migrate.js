@@ -26,6 +26,10 @@ CREATE TABLE IF NOT EXISTS users (
   tier VARCHAR(50) DEFAULT 'Bronze' CHECK (tier IN ('Bronze', 'Silver', 'Gold', 'Platinum')),
   is_active BOOLEAN DEFAULT TRUE,
   email_verified BOOLEAN DEFAULT FALSE,
+  email_verification_token VARCHAR(255),
+  email_verification_expires TIMESTAMP WITH TIME ZONE,
+  password_reset_token VARCHAR(255),
+  password_reset_expires TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -143,6 +147,7 @@ CREATE TABLE IF NOT EXISTS email_referrals (
   affiliate_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   email VARCHAR(255) NOT NULL,
   name VARCHAR(255),
+  phone_number VARCHAR(20),
   status VARCHAR(20) NOT NULL DEFAULT 'invited' CHECK (status IN ('invited', 'confirmed', 'converted', 'expired')),
   invited_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   confirmed_at TIMESTAMP WITH TIME ZONE,

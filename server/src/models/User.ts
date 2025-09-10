@@ -657,14 +657,6 @@ export class UserModel {
     );
   }
 
-  // Update password
-  static async updatePassword(userId: string, newPassword: string): Promise<void> {
-    const password_hash = await bcrypt.hash(newPassword, 12);
-    await pool.query(
-      'UPDATE users SET password_hash = $1 WHERE id = $2',
-      [password_hash, userId]
-    );
-  }
 
   // Clear password reset token
   static async clearPasswordResetToken(userId: string): Promise<void> {

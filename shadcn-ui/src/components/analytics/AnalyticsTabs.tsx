@@ -137,7 +137,7 @@ const AnalyticsTabs: React.FC<AnalyticsTabsProps> = ({ onNavigate }) => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                <p className="text-2xl font-bold text-gray-900">${stats.totalRevenue.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-gray-900">AED {stats.totalRevenue.toLocaleString()}</p>
                 <p className="text-sm text-green-600 flex items-center mt-1">
                   <TrendingUp className="h-4 w-4 mr-1" />
                   Generated this month
@@ -185,7 +185,7 @@ const AnalyticsTabs: React.FC<AnalyticsTabsProps> = ({ onNavigate }) => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Pending Payouts</p>
-                <p className="text-2xl font-bold text-gray-900">${stats.pendingPayouts.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-gray-900">AED {stats.pendingPayouts.toLocaleString()}</p>
                 <p className="text-sm text-orange-600 flex items-center mt-1">
                   <Activity className="h-4 w-4 mr-1" />
                   {stats.pendingTransactions} transactions

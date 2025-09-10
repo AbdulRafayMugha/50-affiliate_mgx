@@ -119,9 +119,9 @@ class UserModel {
                 coordinatorId = SUPER_COORDINATOR_ID;
             }
             // Create user
-            const { rows } = await client.query(`INSERT INTO users (email, password_hash, name, role, referrer_id, coordinator_id, referral_code)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
-         RETURNING id, email, name, role, referrer_id, coordinator_id, referral_code, tier, is_active, email_verified, created_at, updated_at`, [input.email, password_hash, input.name, input.role || 'affiliate', referrer_id, coordinatorId, referral_code]);
+            const { rows } = await client.query(`INSERT INTO users (email, password_hash, name, role, referrer_id, coordinator_id, referral_code, email_verification_token, email_verification_expires)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         RETURNING id, email, name, role, referrer_id, coordinator_id, referral_code, tier, is_active, email_verified, email_verification_token, email_verification_expires, created_at, updated_at`, [input.email, password_hash, input.name, input.role || 'affiliate', referrer_id, coordinatorId, referral_code, input.email_verification_token, input.email_verification_expires]);
             const user = rows[0];
             // Create default affiliate link for new affiliates
             if (user.role === 'affiliate') {
@@ -458,6 +458,32 @@ class UserModel {
       WHERE referrer_id = $1
     `, [userId]);
         return parseInt(rows[0].count);
+    }
+    // Find user by email verification token
+    static async findByVerificationToken(token) {
+        const { rows } = await init_1.pool.query('SELECT * FROM users WHERE email_verification_token = $1', [token]);
+        return rows[0] || null;
+    }
+    // Find user by password reset token
+    static async findByPasswordResetToken(token) {
+        const { rows } = await init_1.pool.query('SELECT * FROM users WHERE password_reset_token = $1', [token]);
+        return rows[0] || null;
+    }
+    // Verify user email
+    static async verifyEmail(userId) {
+        await init_1.pool.query('UPDATE users SET email_verified = true, email_verification_token = NULL, email_verification_expires = NULL WHERE id = $1', [userId]);
+    }
+    // Update verification token
+    static async updateVerificationToken(userId, token, expires) {
+        await init_1.pool.query('UPDATE users SET email_verification_token = $1, email_verification_expires = $2 WHERE id = $3', [token, expires, userId]);
+    }
+    // Update password reset token
+    static async updatePasswordResetToken(userId, token, expires) {
+        await init_1.pool.query('UPDATE users SET password_reset_token = $1, password_reset_expires = $2 WHERE id = $3', [token, expires, userId]);
+    }
+    // Clear password reset token
+    static async clearPasswordResetToken(userId) {
+        await init_1.pool.query('UPDATE users SET password_reset_token = NULL, password_reset_expires = NULL WHERE id = $1', [userId]);
     }
 }
 exports.UserModel = UserModel;

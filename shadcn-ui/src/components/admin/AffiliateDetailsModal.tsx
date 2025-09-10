@@ -645,30 +645,6 @@ const AffiliateDetailsModal: React.FC<AffiliateDetailsModalProps> = ({
                  </CardHeader>
                  <CardContent>
                    {/* Email Stats */}
-                   {emailStats && (
-                     <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-                       <div className="text-center p-3 bg-blue-50 rounded-lg">
-                         <p className="text-2xl font-bold text-blue-600">{emailStats.total}</p>
-                         <p className="text-sm text-gray-600">Total Emails</p>
-                       </div>
-                       <div className="text-center p-3 bg-yellow-50 rounded-lg">
-                         <p className="text-2xl font-bold text-yellow-600">{emailStats.invited}</p>
-                         <p className="text-sm text-gray-600">Invited</p>
-                       </div>
-                       <div className="text-center p-3 bg-green-50 rounded-lg">
-                         <p className="text-2xl font-bold text-green-600">{emailStats.confirmed}</p>
-                         <p className="text-sm text-gray-600">Confirmed</p>
-                       </div>
-                       <div className="text-center p-3 bg-purple-50 rounded-lg">
-                         <p className="text-2xl font-bold text-purple-600">{emailStats.converted}</p>
-                         <p className="text-sm text-gray-600">Converted</p>
-                       </div>
-                       <div className="text-center p-3 bg-red-50 rounded-lg">
-                         <p className="text-2xl font-bold text-red-600">{emailStats.expired}</p>
-                         <p className="text-sm text-gray-600">Expired</p>
-                       </div>
-                     </div>
-                   )}
 
                    {/* Email Referrals List */}
                    <div className="space-y-3">
@@ -687,7 +663,10 @@ const AffiliateDetailsModal: React.FC<AffiliateDetailsModalProps> = ({
                              <div>
                                <p className="font-medium text-gray-900">{emailRef.email}</p>
                                {emailRef.name && (
-                                 <p className="text-sm text-gray-500">{emailRef.name}</p>
+                                 <p className="text-sm text-gray-500">Name: {emailRef.name}</p>
+                               )}
+                               {emailRef.phone_number && (
+                                 <p className="text-sm text-gray-500">Phone: {emailRef.phone_number}</p>
                                )}
                                <p className="text-xs text-gray-400">
                                  Invited: {invitedDate} • Expires: {expiresDate}

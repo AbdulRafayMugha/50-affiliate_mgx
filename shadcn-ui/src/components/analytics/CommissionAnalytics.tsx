@@ -24,7 +24,7 @@ import {
   ChartTooltip, 
   ChartTooltipContent
 } from '../ui/chart';
-import { BarChart, Bar, LineChart, Line, PieChart as RechartsPieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { BarChart, Bar, LineChart, Line, PieChart as RechartsPieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
 interface CommissionAnalyticsProps {
   timeRange?: string;
@@ -253,7 +253,7 @@ useEffect(() => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Commissions</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  ${commissionData.totalCommissions.toLocaleString()}
+                  AED {commissionData.totalCommissions.toLocaleString()}
                 </p>
                 <p className="text-sm text-green-600 flex items-center mt-1">
                   <TrendingUp className="h-4 w-4 mr-1" />
@@ -271,7 +271,7 @@ useEffect(() => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Pending Payouts</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  ${commissionData.pendingCommissions.toLocaleString()}
+                  AED {commissionData.pendingCommissions.toLocaleString()}
                 </p>
                 <p className="text-sm text-orange-600 flex items-center mt-1">
                   <Clock className="h-4 w-4 mr-1" />
@@ -289,7 +289,7 @@ useEffect(() => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Average Commission</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  ${commissionData.averageCommission}
+                  AED {commissionData.averageCommission}
                 </p>
                 <p className="text-sm text-blue-600 flex items-center mt-1">
                   <Target className="h-4 w-4 mr-1" />
@@ -307,7 +307,7 @@ useEffect(() => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Paid Commissions</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  ${commissionData.paidCommissions.toLocaleString()}
+                  AED {commissionData.paidCommissions.toLocaleString()}
                 </p>
                 <p className="text-sm text-green-600 flex items-center mt-1">
                   <CheckCircle className="h-4 w-4 mr-1" />
@@ -333,11 +333,12 @@ useEffect(() => {
         </CardHeader>
                 <CardContent className="pt-6">
           <div style={{ width: '100%', height: 400, position: 'relative' }}>
-            <ResponsiveContainer>
-              <BarChart
-                data={commissionData.monthlyTrend}
-                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-              >
+            <BarChart
+              width={800}
+              height={400}
+              data={commissionData.monthlyTrend}
+              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+            >
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis 
                   dataKey="month" 
@@ -348,7 +349,7 @@ useEffect(() => {
                   yAxisId="left"
                   tick={{ fill: '#6b7280' }}
                   axisLine={{ stroke: '#e5e7eb' }}
-                  tickFormatter={(value) => `$${value.toLocaleString()}`}
+                  tickFormatter={(value) => `AED ${value.toLocaleString()}`}
                 />
                 <YAxis 
                   yAxisId="right"
@@ -366,7 +367,7 @@ useEffect(() => {
                     padding: '12px'
                   }}
                   formatter={(value, name) => [
-                    name === 'Commissions' ? `$${Number(value).toLocaleString()}` : `${value}%`,
+                    name === 'Commissions' ? `AED ${Number(value).toLocaleString()}` : `${value}%`,
                     name === 'Commissions' ? 'Total Commissions' : 'Growth Rate'
                   ]}
                   labelStyle={{ color: '#6b7280' }}
@@ -391,7 +392,6 @@ useEffect(() => {
                   name="Growth"
                 />
               </BarChart>
-            </ResponsiveContainer>
           </div>
         </CardContent>
       </Card>
@@ -424,8 +424,8 @@ useEffect(() => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-gray-900">${tier.commissions.toLocaleString()}</p>
-                    <p className="text-sm text-gray-600">${tier.avgCommission} avg</p>
+                    <p className="font-bold text-gray-900">AED {tier.commissions.toLocaleString()}</p>
+                    <p className="text-sm text-gray-600">AED {tier.avgCommission} avg</p>
                   </div>
                 </div>
               ))}
@@ -445,8 +445,10 @@ useEffect(() => {
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-center h-64">
-                             <ResponsiveContainer width="100%" height="100%">
-                 <RechartsPieChart>
+                 <RechartsPieChart
+                   width={400}
+                   height={300}
+                 >
                    <Pie
                     data={commissionData.payoutStatus?.filter(item => item?.amount > 0).map(item => ({
                       name: item.status || '',
@@ -465,10 +467,9 @@ useEffect(() => {
                     ))}
                   </Pie>
                   <ChartTooltip 
-                    formatter={(value) => [`$${value.toLocaleString()}`, '']}
+                    formatter={(value) => [`AED ${value.toLocaleString()}`, '']}
                   />
                 </RechartsPieChart>
-              </ResponsiveContainer>
             </div>
             <div className="mt-4 space-y-2">
               {commissionData.payoutStatus.map((item, index) => (
@@ -484,7 +485,7 @@ useEffect(() => {
                   </div>
                   <div className="text-right">
                     <span className="text-sm font-medium text-gray-900">
-                      ${item.amount.toLocaleString()}
+                      AED {item.amount.toLocaleString()}
                     </span>
                     <span className="text-sm text-gray-600 ml-2">
                       ({item.percentage}%)
@@ -523,7 +524,7 @@ useEffect(() => {
               <h4 className="font-semibold text-blue-900">Tier Performance</h4>
               <p className="text-sm text-blue-700 mt-1">
                 {commissionData.tierBreakdown[0] ? 
-  `${String(commissionData.tierBreakdown[0].tier)} tier leads with $${commissionData.tierBreakdown[0].commissions.toLocaleString()}` :
+  `${String(commissionData.tierBreakdown[0].tier)} tier leads with AED ${commissionData.tierBreakdown[0].commissions.toLocaleString()}` :
   'No tier data available'
 }
               </p>
@@ -533,7 +534,7 @@ useEffect(() => {
               <Clock className="h-8 w-8 text-orange-600 mx-auto mb-2" />
               <h4 className="font-semibold text-orange-900">Pending Payouts</h4>
               <p className="text-sm text-orange-700 mt-1">
-                ${commissionData.pendingCommissions.toLocaleString()} ready for processing
+                AED {commissionData.pendingCommissions.toLocaleString()} ready for processing
               </p>
             </div>
           </div>

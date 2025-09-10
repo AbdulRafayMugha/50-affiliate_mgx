@@ -72,6 +72,8 @@ export interface Sale {
 export interface EmailLead {
   id: string;
   email: string;
+  name?: string;
+  phoneNumber?: string;
   affiliateId: string;
   status: 'invited' | 'confirmed' | 'converted' | 'expired';
   invitedAt: string;
@@ -87,6 +89,7 @@ export interface EmailReferral {
   affiliate_id: string;
   email: string;
   name?: string;
+  phone_number?: string;
   status: 'invited' | 'confirmed' | 'converted' | 'expired';
   invited_at: string;
   confirmed_at?: string;

@@ -35,10 +35,13 @@ const AffiliateDashboard = () => {
   // Email invite form
   const [emailForm, setEmailForm] = useState({
     email: '',
-    name: ''
+    name: '',
+    phoneNumber: ''
   });
   const [emailSending, setEmailSending] = useState(false);
   const [emailSuccess, setEmailSuccess] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [emailWarning, setEmailWarning] = useState<string | null>(null);
 
   useEffect(() => {
     const loadDashboardData = async () => {
@@ -82,22 +85,50 @@ const AffiliateDashboard = () => {
     }
   };
 
+  const checkEmailExists = (email: string) => {
+    if (!email || !emailLeads.length) {
+      setEmailWarning(null);
+      return;
+    }
+    
+    const existingEmail = emailLeads.find(lead => 
+      lead.email.toLowerCase() === email.toLowerCase()
+    );
+    
+    if (existingEmail) {
+      setEmailWarning(`This email (${existingEmail.email}) has already been invited on ${new Date(existingEmail.invitedAt).toLocaleDateString()}`);
+    } else {
+      setEmailWarning(null);
+    }
+  };
+
   const handleEmailInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     setEmailSending(true);
     setEmailSuccess(false);
+    setEmailError(null);
+    setEmailWarning(null);
 
     try {
-      const success = await DataService.sendEmailInvite(user.id, emailForm.email, emailForm.name);
+      const success = await DataService.sendEmailInvite(user.id, emailForm.email, emailForm.name, emailForm.phoneNumber);
       if (success) {
         setEmailSuccess(true);
-        setEmailForm(prev => ({ ...prev, email: '' }));
+        setEmailForm(prev => ({ ...prev, email: '', name: '', phoneNumber: '' }));
         // Refresh email leads
         const updatedLeads = await DataService.getEmailLeads(user.id);
         setEmailLeads(updatedLeads);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending email invite:', error);
+      
+      // Handle specific error cases
+      if (error.response?.status === 409) {
+        setEmailError('This email address has already been invited. Please use a different email address.');
+      } else if (error.response?.data?.error) {
+        setEmailError(error.response.data.error);
+      } else {
+        setEmailError('Failed to send email invite. Please try again.');
+      }
     } finally {
       setEmailSending(false);
     }
@@ -235,7 +266,10 @@ const AffiliateDashboard = () => {
                   id="email"
                   type="email"
                   value={emailForm.email}
-                  onChange={(e) => setEmailForm(prev => ({ ...prev, email: e.target.value }))}
+                  onChange={(e) => {
+                    setEmailForm(prev => ({ ...prev, email: e.target.value }));
+                    checkEmailExists(e.target.value);
+                  }}
                   placeholder="friend@example.com"
                   required
                 />
@@ -248,6 +282,16 @@ const AffiliateDashboard = () => {
                   value={emailForm.name}
                   onChange={(e) => setEmailForm(prev => ({ ...prev, name: e.target.value }))}
                   placeholder="Recipient's name..."
+                />
+              </div>
+              <div>
+                <Label htmlFor="phoneNumber">Phone Number (Preferred)</Label>
+                <Input
+                  id="phoneNumber"
+                  type="tel"
+                  value={emailForm.phoneNumber}
+                  onChange={(e) => setEmailForm(prev => ({ ...prev, phoneNumber: e.target.value }))}
+                  placeholder="+1 (555) 123-4567"
                 />
               </div>
               <Button type="submit" disabled={emailSending} className="w-full">
@@ -265,6 +309,18 @@ const AffiliateDashboard = () => {
               <Alert className="mt-4">
                 <CheckCircle className="h-4 w-4" />
                 <AlertDescription>Email invite sent successfully!</AlertDescription>
+              </Alert>
+            )}
+            {emailWarning && (
+              <Alert className="mt-4" variant="default">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{emailWarning}</AlertDescription>
+              </Alert>
+            )}
+            {emailError && (
+              <Alert className="mt-4" variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{emailError}</AlertDescription>
               </Alert>
             )}
           </CardContent>
@@ -366,6 +422,12 @@ const AffiliateDashboard = () => {
                 <div key={lead.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div>
                     <p className="text-sm font-medium">{lead.email}</p>
+                    {lead.name && (
+                      <p className="text-xs text-gray-500">Name: {lead.name}</p>
+                    )}
+                    {lead.phoneNumber && (
+                      <p className="text-xs text-gray-500">Phone: {lead.phoneNumber}</p>
+                    )}
                     <p className="text-xs text-gray-500">
                       Invited {new Date(lead.invitedAt).toLocaleDateString()}
                     </p>

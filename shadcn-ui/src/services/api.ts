@@ -72,8 +72,16 @@ export const affiliateAPI = {
   
   getReferralLinks: () => api.get('/affiliate/links'),
   
-  sendEmailInvite: (email: string, name?: string) =>
-    api.post('/affiliate/email-invite', { email, name }),
+  sendEmailInvite: (email: string, name?: string, phoneNumber?: string) => {
+    const payload: { email: string; name?: string; phone_number?: string } = { email };
+    if (name && name.trim()) {
+      payload.name = name.trim();
+    }
+    if (phoneNumber && phoneNumber.trim()) {
+      payload.phone_number = phoneNumber.trim();
+    }
+    return api.post('/affiliate/email-invite', payload);
+  },
   
   getEmailInvites: () => api.get('/affiliate/email-invites'),
   
@@ -107,6 +115,7 @@ export const transactionAPI = {
 // Admin API
 export const adminAPI = {
   getDashboard: () => api.get('/admin/dashboard'),
+  getAnalytics: (timeRange?: string) => api.get('/admin/analytics', { params: { timeRange } }),
   getTopAffiliates: (limit?: number) => api.get('/admin/top-affiliates', { params: { limit } }),
   
   getAffiliates: (page?: number, limit?: number) =>

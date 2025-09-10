@@ -10,6 +10,12 @@ exports.authRoutes = router;
 // Public routes
 router.post('/register', (0, validation_1.validate)(validation_1.schemas.register), authController_1.register);
 router.post('/login', (0, validation_1.validate)(validation_1.schemas.login), authController_1.login);
+// Email verification routes
+router.post('/verify-email', authController_1.verifyEmail);
+router.post('/resend-verification', authController_1.resendVerification);
+// Password reset routes
+router.post('/forgot-password', authController_1.requestPasswordReset);
+router.post('/reset-password', authController_1.resetPassword);
 // Protected routes
 router.get('/profile', auth_1.authenticateToken, authController_1.getProfile);
 router.get('/verify', auth_1.authenticateToken, authController_1.verifyToken);

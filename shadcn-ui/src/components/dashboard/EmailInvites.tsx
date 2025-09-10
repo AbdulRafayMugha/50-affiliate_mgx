@@ -31,6 +31,7 @@ interface EmailInvite {
   id: string;
   email: string;
   name?: string;
+  phone_number?: string;
   status: 'invited' | 'confirmed' | 'converted' | 'expired';
   invited_at: string;
   confirmed_at?: string;
@@ -60,7 +61,8 @@ const EmailInvites = () => {
   // Email form
   const [emailForm, setEmailForm] = useState({
     email: '',
-    name: ''
+    name: '',
+    phoneNumber: ''
   });
 
   useEffect(() => {
@@ -116,7 +118,7 @@ const EmailInvites = () => {
 
     setSending(true);
     try {
-      await affiliateAPI.sendEmailInvite(emailForm.email, emailForm.name);
+      await affiliateAPI.sendEmailInvite(emailForm.email, emailForm.name, emailForm.phoneNumber);
       
       toast({
         title: "Success",
@@ -124,12 +126,18 @@ const EmailInvites = () => {
       });
       
       // Reset form and reload data
-      setEmailForm(prev => ({ ...prev, email: '' }));
+      setEmailForm(prev => ({ ...prev, email: '', name: '', phoneNumber: '' }));
       await loadEmailData();
     } catch (error: any) {
       console.error('Error sending email invite:', error);
       
-      const errorMessage = error.response?.data?.error || 'Failed to send email invite';
+      let errorMessage = 'Failed to send email invite';
+      if (error.response?.status === 409) {
+        errorMessage = 'This email address has already been invited. Please use a different email address.';
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      }
+      
       toast({
         title: "Error",
         description: errorMessage,
@@ -394,6 +402,16 @@ const EmailInvites = () => {
                 placeholder="Recipient's name..."
               />
             </div>
+            <div>
+              <Label htmlFor="phoneNumber">Phone Number (Preferred)</Label>
+              <Input
+                id="phoneNumber"
+                type="tel"
+                value={emailForm.phoneNumber}
+                onChange={(e) => setEmailForm(prev => ({ ...prev, phoneNumber: e.target.value }))}
+                placeholder="+1 (555) 123-4567"
+              />
+            </div>
           </form>
         </CardContent>
       </Card>
@@ -491,6 +509,9 @@ const EmailInvites = () => {
                       </div>
                                              {invite.name && (
                          <p className="text-sm text-gray-600 mb-1 line-clamp-2">Name: {invite.name}</p>
+                       )}
+                       {invite.phone_number && (
+                         <p className="text-sm text-gray-600 mb-1 line-clamp-2">Phone: {invite.phone_number}</p>
                        )}
                        <div className="flex items-center space-x-4 text-xs text-gray-500">
                          <span className="flex items-center">

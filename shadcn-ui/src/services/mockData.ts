@@ -133,9 +133,9 @@ export class DataService {
     }
   }
 
-  static async sendEmailInvite(affiliateId: string, email: string, name?: string): Promise<boolean> {
+  static async sendEmailInvite(affiliateId: string, email: string, name?: string, phoneNumber?: string): Promise<boolean> {
     try {
-      await affiliateAPI.sendEmailInvite(email, name);
+      await affiliateAPI.sendEmailInvite(email, name, phoneNumber);
       return true;
     } catch (error) {
       console.error('Failed to send email invite:', error);

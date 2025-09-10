@@ -3,6 +3,7 @@ export interface EmailInvite {
     affiliate_id: string;
     email: string;
     name?: string;
+    phone_number?: string;
     status: 'invited' | 'confirmed' | 'converted' | 'expired';
     invited_at: Date;
     confirmed_at?: Date;
@@ -13,7 +14,7 @@ export interface EmailInvite {
     updated_at: Date;
 }
 export declare class EmailInviteModel {
-    static create(affiliateId: string, email: string, name?: string): Promise<EmailInvite>;
+    static create(affiliateId: string, email: string, name?: string, phoneNumber?: string): Promise<EmailInvite>;
     static getByAffiliateId(affiliateId: string, limit?: number): Promise<EmailInvite[]>;
     static updateStatus(inviteId: string, status: EmailInvite['status']): Promise<void>;
     static getStats(affiliateId: string): Promise<{

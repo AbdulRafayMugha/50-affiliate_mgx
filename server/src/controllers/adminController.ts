@@ -7,6 +7,7 @@ import { BankDetailsModel } from '../models/BankDetails';
 import { EmailInviteModel } from '../models/EmailInvite';
 import { ReportModel } from '../models/ReportModel';
 import { asyncHandler } from '../middleware/errorHandler';
+import { pool } from '../database/init';
 
 export const getDashboard = asyncHandler(async (req: AuthRequest, res: Response) => {
   const [
@@ -23,6 +24,112 @@ export const getDashboard = asyncHandler(async (req: AuthRequest, res: Response)
     stats: totalStats,
     recentTransactions: recentTransactions.transactions,
     pendingCommissions: pendingCommissions.commissions
+  });
+});
+
+// Get analytics data for charts and trends
+export const getAnalytics = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { timeRange = '30d' } = req.query;
+  
+  // Calculate date range
+  let daysBack = 30;
+  if (timeRange === '7d') daysBack = 7;
+  else if (timeRange === '90d') daysBack = 90;
+  else if (timeRange === '1y') daysBack = 365;
+  
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - daysBack);
+  
+  // Get revenue trends (daily)
+  const revenueTrends = await pool.query(`
+    SELECT 
+      DATE(created_at) as date,
+      COALESCE(SUM(amount), 0) as revenue,
+      COUNT(*) as transactions
+    FROM transactions 
+    WHERE status = 'completed' 
+    AND created_at >= $1
+    GROUP BY DATE(created_at)
+    ORDER BY date ASC
+  `, [startDate]);
+  
+  // Get commission trends (daily)
+  const commissionTrends = await pool.query(`
+    SELECT 
+      DATE(created_at) as date,
+      COALESCE(SUM(amount), 0) as commissions,
+      COUNT(*) as commission_count
+    FROM commissions 
+    WHERE status = 'paid'
+    AND created_at >= $1
+    GROUP BY DATE(created_at)
+    ORDER BY date ASC
+  `, [startDate]);
+  
+  // Get registration trends (daily)
+  const registrationTrends = await pool.query(`
+    SELECT 
+      DATE(created_at) as date,
+      COUNT(*) as registrations
+    FROM users 
+    WHERE role = 'affiliate'
+    AND created_at >= $1
+    GROUP BY DATE(created_at)
+    ORDER BY date ASC
+  `, [startDate]);
+  
+  // Get top performing affiliates
+  const topAffiliates = await pool.query(`
+    SELECT 
+      u.id,
+      u.name,
+      u.email,
+      COALESCE(SUM(c.amount), 0) as total_commissions,
+      COUNT(DISTINCT t.id) as total_transactions,
+      COALESCE(SUM(t.amount), 0) as total_revenue
+    FROM users u
+    LEFT JOIN commissions c ON c.affiliate_id = u.id AND c.status = 'paid'
+    LEFT JOIN transactions t ON t.referrer_id = u.id AND t.status = 'completed'
+    WHERE u.role = 'affiliate'
+    AND u.created_at >= $1
+    GROUP BY u.id, u.name, u.email
+    ORDER BY total_commissions DESC
+    LIMIT 10
+  `, [startDate]);
+  
+  // Get commission level distribution
+  const commissionLevels = await pool.query(`
+    SELECT 
+      level,
+      COUNT(*) as count,
+      COALESCE(SUM(amount), 0) as total_amount
+    FROM commissions 
+    WHERE status = 'paid'
+    AND created_at >= $1
+    GROUP BY level
+    ORDER BY level ASC
+  `, [startDate]);
+  
+  // Get monthly revenue comparison
+  const monthlyRevenue = await pool.query(`
+    SELECT 
+      DATE_TRUNC('month', created_at) as month,
+      COALESCE(SUM(amount), 0) as revenue,
+      COUNT(*) as transactions
+    FROM transactions 
+    WHERE status = 'completed'
+    AND created_at >= $1
+    GROUP BY DATE_TRUNC('month', created_at)
+    ORDER BY month ASC
+  `, [startDate]);
+  
+  res.json({
+    revenueTrends: revenueTrends.rows,
+    commissionTrends: commissionTrends.rows,
+    registrationTrends: registrationTrends.rows,
+    topAffiliates: topAffiliates.rows,
+    commissionLevels: commissionLevels.rows,
+    monthlyRevenue: monthlyRevenue.rows
   });
 });
 

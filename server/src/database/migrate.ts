@@ -146,6 +146,7 @@ CREATE TABLE IF NOT EXISTS email_referrals (
   affiliate_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   email VARCHAR(255) NOT NULL,
   name VARCHAR(255),
+  phone_number VARCHAR(20),
   status VARCHAR(20) NOT NULL DEFAULT 'invited' CHECK (status IN ('invited', 'confirmed', 'converted', 'expired')),
   invited_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   confirmed_at TIMESTAMP WITH TIME ZONE,

@@ -10,6 +10,10 @@ export interface User {
     tier: 'Bronze' | 'Silver' | 'Gold' | 'Platinum';
     is_active: boolean;
     email_verified: boolean;
+    email_verification_token?: string;
+    email_verification_expires?: Date;
+    password_reset_token?: string;
+    password_reset_expires?: Date;
     created_at: Date;
     updated_at: Date;
 }
@@ -21,6 +25,8 @@ export interface CreateUserInput {
     referrer_code?: string;
     coordinator_id?: string;
     created_by_coordinator?: string;
+    email_verification_token?: string;
+    email_verification_expires?: Date;
 }
 export declare class UserModel {
     static getTopAffiliates(limit?: number): Promise<any[]>;
@@ -59,4 +65,10 @@ export declare class UserModel {
     }>;
     static getAllCoordinators(): Promise<any[]>;
     static getReferralCount(userId: string): Promise<number>;
+    static findByVerificationToken(token: string): Promise<User | null>;
+    static findByPasswordResetToken(token: string): Promise<User | null>;
+    static verifyEmail(userId: string): Promise<void>;
+    static updateVerificationToken(userId: string, token: string, expires: Date): Promise<void>;
+    static updatePasswordResetToken(userId: string, token: string, expires: Date): Promise<void>;
+    static clearPasswordResetToken(userId: string): Promise<void>;
 }

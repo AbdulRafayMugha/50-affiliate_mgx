@@ -150,7 +150,7 @@ const AffiliatesList: React.FC<AffiliatesListProps> = ({ onNavigate }) => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Earnings</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  ${affiliates.reduce((sum, a) => sum + (a.totalEarnings || 0), 0).toLocaleString()}
+                  AED {affiliates.reduce((sum, a) => sum + (a.totalEarnings || 0), 0).toLocaleString()}
                 </p>
               </div>
               <DollarSign className="h-8 w-8 text-green-600" />
@@ -268,10 +268,10 @@ const AffiliatesList: React.FC<AffiliatesListProps> = ({ onNavigate }) => {
                     <td className="py-3 px-4">
                       <div>
                         <p className="font-medium text-gray-900">
-                          ${(affiliate.totalEarnings || 0).toLocaleString()}
+                          AED {(affiliate.totalEarnings || 0).toLocaleString()}
                         </p>
                         <p className="text-sm text-gray-600">
-                          ${(affiliate.pendingEarnings || 0).toLocaleString()} pending
+                          AED {(affiliate.pendingEarnings || 0).toLocaleString()} pending
                         </p>
                       </div>
                     </td>

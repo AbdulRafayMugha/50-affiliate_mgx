@@ -43,7 +43,8 @@ export const schemas = {
   
   emailInvite: Joi.object({
     email: Joi.string().email().required(),
-    name: Joi.string().max(100).optional()
+    name: Joi.string().max(100).allow('').optional(),
+    phone_number: Joi.string().max(20).allow('').optional()
   }),
   
   affiliateLink: Joi.object({

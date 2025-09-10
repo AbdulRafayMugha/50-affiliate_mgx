@@ -24,7 +24,7 @@ import {
   ChartTooltip, 
   ChartTooltipContent
 } from '../ui/chart';
-import { BarChart, Bar, LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid } from 'recharts';
 
 interface ConversionAnalyticsProps {
   timeRange?: string;
@@ -262,15 +262,16 @@ const ConversionAnalytics: React.FC<ConversionAnalyticsProps> = ({ timeRange = '
             }}
             className="h-[400px]"
           >
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={conversionData.monthlyTrend.map(item => ({
-                  name: item.month,
-                  "Conversion Rate": item.rate,
-                  "Visitors": item.visitors / 1000 // Scale down for better visualization
-                }))}
-                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-              >
+            <BarChart
+              width={800}
+              height={400}
+              data={conversionData.monthlyTrend.map(item => ({
+                name: item.month,
+                "Conversion Rate": item.rate,
+                "Visitors": item.visitors / 1000 // Scale down for better visualization
+              }))}
+              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+            >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis />
@@ -292,7 +293,6 @@ const ConversionAnalytics: React.FC<ConversionAnalyticsProps> = ({ timeRange = '
                 <Bar dataKey="Conversion Rate" fill="#10b981" />
                 <Bar dataKey="Visitors" fill="#3b82f6" />
               </BarChart>
-            </ResponsiveContainer>
           </ChartContainer>
         </CardContent>
       </Card>

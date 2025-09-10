@@ -21,7 +21,7 @@ exports.getDashboard = (0, errorHandler_1.asyncHandler)(async (req, res) => {
     let currentTier = 'Bronze';
     let nextTier = 'Silver';
     let progress = 0;
-    let requirement = 'Earn $500 to reach Silver';
+    let requirement = 'Earn AED 500 to reach Silver';
     if (totalEarnings >= 5000) {
         currentTier = 'Platinum';
         nextTier = null;
@@ -32,13 +32,13 @@ exports.getDashboard = (0, errorHandler_1.asyncHandler)(async (req, res) => {
         currentTier = 'Gold';
         nextTier = 'Platinum';
         progress = ((totalEarnings - 2000) / 3000) * 100;
-        requirement = 'Earn $5,000 total to reach Platinum';
+        requirement = 'Earn AED 5,000 total to reach Platinum';
     }
     else if (totalEarnings >= 500) {
         currentTier = 'Silver';
         nextTier = 'Gold';
         progress = ((totalEarnings - 500) / 1500) * 100;
-        requirement = 'Earn $2,000 total to reach Gold';
+        requirement = 'Earn AED 2,000 total to reach Gold';
     }
     else {
         progress = (totalEarnings / 500) * 100;
@@ -106,14 +106,14 @@ exports.getReferralLinks = (0, errorHandler_1.asyncHandler)(async (req, res) => 
     res.json({ links: linksWithUrls });
 });
 exports.sendEmailInvite = (0, errorHandler_1.asyncHandler)(async (req, res) => {
-    const { email, name } = req.body;
+    const { email, name, phone_number } = req.body;
     // Check if email already invited
     const existingInvites = await EmailInvite_1.EmailInviteModel.getByAffiliateId(req.user.id);
     const alreadyInvited = existingInvites.some(invite => invite.email === email);
     if (alreadyInvited) {
         return res.status(409).json({ error: 'Email already invited' });
     }
-    const invite = await EmailInvite_1.EmailInviteModel.create(req.user.id, email, name);
+    const invite = await EmailInvite_1.EmailInviteModel.create(req.user.id, email, name, phone_number);
     // Here you would integrate with an email service like SendGrid, Mailgun, etc.
     // For now, we'll just log it
     console.log(`Email referral invite sent to ${email} from ${req.user.email}`);
@@ -123,6 +123,7 @@ exports.sendEmailInvite = (0, errorHandler_1.asyncHandler)(async (req, res) => {
             id: invite.id,
             email: invite.email,
             name: invite.name,
+            phone_number: invite.phone_number,
             status: invite.status,
             invited_at: invite.invited_at,
             expires_at: invite.expires_at
