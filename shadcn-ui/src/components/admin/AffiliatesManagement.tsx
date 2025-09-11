@@ -94,15 +94,15 @@ const AffiliatesManagement = () => {
     affiliate.referralCode?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getTierColor = (tier: string) => {
-    switch (tier?.toLowerCase()) {
-      case 'bronze': return 'bg-orange-100 text-orange-800';
-      case 'silver': return 'bg-gray-100 text-gray-800';
-      case 'gold': return 'bg-yellow-100 text-yellow-800';
-      case 'platinum': return 'bg-purple-100 text-purple-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
+  // const getTierColor = (tier: string) => {
+  //   switch (tier?.toLowerCase()) {
+  //     case 'bronze': return 'bg-orange-100 text-orange-800';
+  //     case 'silver': return 'bg-gray-100 text-gray-800';
+  //     case 'gold': return 'bg-yellow-100 text-yellow-800';
+  //     case 'platinum': return 'bg-purple-100 text-purple-800';
+  //     default: return 'bg-gray-100 text-gray-800';
+  //   }
+  // };
 
   const getStatusColor = (isActive: boolean) => {
     return isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
@@ -244,7 +244,7 @@ const AffiliatesManagement = () => {
               <thead>
                 <tr className="border-b border-gray-200">
                   <th className="text-left py-3 px-4 font-medium text-gray-600">Affiliate</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Tier</th>
+                  {/* <th className="text-left py-3 px-4 font-medium text-gray-600">Tier</th> */}
                   <th className="text-left py-3 px-4 font-medium text-gray-600">Status</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-600">Referrals</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-600">Total Earnings</th>
@@ -270,11 +270,11 @@ const AffiliatesManagement = () => {
                         </div>
                       </div>
                     </td>
-                    <td className="py-4 px-4">
+                   {/* <td className="py-4 px-4">
                       <Badge className={getTierColor(affiliate.tier?.name || '')}>
                         {affiliate.tier?.name || 'Bronze'}
                       </Badge>
-                    </td>
+                    </td> */}
                     <td className="py-4 px-4">
                       <Badge className={getStatusColor(affiliate.user?.status === 'active')}>
                         {affiliate.user?.status === 'active' ? 'Active' : 'Inactive'}

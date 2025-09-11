@@ -11,7 +11,7 @@ export interface User {
   referrer_id?: string;
   coordinator_id?: string;
   referral_code: string;
-  tier: 'Bronze' | 'Silver' | 'Gold' | 'Platinum';
+  // tier: 'Bronze' | 'Silver' | 'Gold' | 'Platinum'; // Temporarily disabled tier functionality
   is_active: boolean;
   email_verified: boolean;
   email_verification_token?: string;
@@ -42,7 +42,7 @@ export class UserModel {
         u.name,
         u.email,
         u.referral_code,
-        u.tier,
+        -- u.tier, -- Temporarily disabled tier functionality
         u.is_active,
         COALESCE(
           (SELECT SUM(c.amount::numeric)
@@ -97,9 +97,9 @@ export class UserModel {
         email: row.email
       },
       referralCode: row.referral_code,
-      tier: {
-        name: row.tier
-      },
+      // tier: {
+      //   name: row.tier
+      // },
       totalEarnings: parseFloat(row.total_earnings),
       pendingEarnings: parseFloat(row.pending_earnings),
       totalReferrals: parseInt(row.total_referrals),
@@ -203,7 +203,7 @@ export class UserModel {
   
   static async findByEmail(email: string): Promise<User | null> {
     const { rows } = await pool.query(
-      `SELECT id, email, password_hash, name, role, referrer_id, referral_code, tier, is_active, email_verified, created_at, updated_at
+      `SELECT id, email, password_hash, name, role, referrer_id, referral_code, is_active, email_verified, created_at, updated_at
        FROM users WHERE email = $1`,
       [email]
     );
@@ -213,7 +213,7 @@ export class UserModel {
   
   static async findById(id: string): Promise<User | null> {
     const { rows } = await pool.query(
-      `SELECT id, email, name, role, referrer_id, referral_code, tier, is_active, email_verified, created_at, updated_at
+      `SELECT id, email, name, role, referrer_id, referral_code, is_active, email_verified, created_at, updated_at
        FROM users WHERE id = $1`,
       [id]
     );
@@ -223,7 +223,7 @@ export class UserModel {
   
   static async findByReferralCode(referral_code: string): Promise<User | null> {
     const { rows } = await pool.query(
-      `SELECT id, email, name, role, referrer_id, referral_code, tier, is_active, email_verified, created_at, updated_at
+      `SELECT id, email, name, role, referrer_id, referral_code, is_active, email_verified, created_at, updated_at
        FROM users WHERE referral_code = $1 AND is_active = true`,
       [referral_code]
     );
@@ -257,7 +257,7 @@ export class UserModel {
     try {
       // Get direct referrals (Level 1)
       const { rows: level1 } = await pool.query(`
-        SELECT id, name, email, created_at, tier, is_active,
+        SELECT id, name, email, created_at, is_active,
                (SELECT COUNT(*) FROM transactions t 
                 JOIN affiliate_links al ON t.affiliate_link_id = al.id 
                 WHERE al.affiliate_id = users.id) as total_sales,
@@ -273,7 +273,7 @@ export class UserModel {
         const level1Ids = level1.map(u => u.id).filter(id => id);
         if (level1Ids.length > 0) {
           const { rows: level2Rows } = await pool.query(`
-            SELECT id, name, email, created_at, tier, is_active,
+            SELECT id, name, email, created_at, is_active,
                    (SELECT COUNT(*) FROM transactions t 
                     JOIN affiliate_links al ON t.affiliate_link_id = al.id 
                     WHERE al.affiliate_id = users.id) as total_sales,
@@ -292,7 +292,7 @@ export class UserModel {
         const level2Ids = level2.map(u => u.id).filter(id => id);
         if (level2Ids.length > 0) {
           const { rows: level3Rows } = await pool.query(`
-            SELECT id, name, email, created_at, tier, is_active,
+            SELECT id, name, email, created_at,is_active,
                    (SELECT COUNT(*) FROM transactions t 
                     JOIN affiliate_links al ON t.affiliate_link_id = al.id 
                     WHERE al.affiliate_id = users.id) as total_sales,
@@ -311,7 +311,7 @@ export class UserModel {
         name: user.name,
         email: user.email,
         role: 'affiliate',
-        tier: user.tier,
+        // tier: user.tier,
         isActive: user.is_active === true,
         createdAt: user.created_at,
         totalEarnings: parseFloat(user.total_earnings || 0),
@@ -347,12 +347,13 @@ export class UserModel {
     }
   }
   
-  static async updateTier(userId: string, tier: User['tier']): Promise<void> {
-    await pool.query(
-      'UPDATE users SET tier = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-      [tier, userId]
-    );
-  }
+  // Temporarily disabled tier functionality
+  // static async updateTier(userId: string, tier: User['tier']): Promise<void> {
+  //   await pool.query(
+  //     'UPDATE users SET tier = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+  //     [tier, userId]
+  //   );
+  // }
   
   static async updateProfile(userId: string, updates: { name?: string; email?: string }): Promise<User> {
     const setClause = Object.keys(updates)
@@ -363,7 +364,7 @@ export class UserModel {
     
     const { rows } = await pool.query(
       `UPDATE users SET ${setClause}, updated_at = CURRENT_TIMESTAMP 
-       WHERE id = $1 RETURNING id, email, name, role, referrer_id, referral_code, tier, is_active, email_verified, created_at, updated_at`,
+       WHERE id = $1 RETURNING id, email, name, role, referrer_id, referral_code, is_active, email_verified, created_at, updated_at`,
       [userId, ...values]
     );
     
@@ -407,7 +408,7 @@ export class UserModel {
     
     const [affiliatesResult, countResult] = await Promise.all([
       pool.query(
-        `SELECT u.id, u.name, u.email, u.tier, u.created_at, u.is_active, u.referral_code,
+        `SELECT u.id, u.name, u.email, u.created_at, u.is_active, u.referral_code,
                 (SELECT COUNT(*) FROM users WHERE referrer_id = u.id) as direct_referrals,
                 (SELECT COALESCE(SUM(amount), 0) FROM commissions WHERE affiliate_id = u.id AND status = 'paid') as total_earnings,
                 (SELECT COALESCE(SUM(amount), 0) FROM commissions WHERE affiliate_id = u.id AND status = 'pending') as pending_earnings
@@ -425,7 +426,7 @@ export class UserModel {
       id: row.id,
       userId: row.id,
       referralCode: row.referral_code,
-      tier: row.tier ? { name: row.tier } : { name: 'Bronze' },
+      // tier: row.tier ? { name: row.tier } : { name: 'Bronze' },
       totalEarnings: parseFloat(row.total_earnings || 0),
       pendingEarnings: parseFloat(row.pending_earnings || 0),
       totalReferrals: parseInt(row.direct_referrals || 0),
@@ -459,7 +460,7 @@ export class UserModel {
     
     const [affiliatesResult, countResult] = await Promise.all([
       pool.query(
-        `SELECT u.id, u.name, u.email, u.tier, u.created_at, u.is_active, u.referral_code,
+        `SELECT u.id, u.name, u.email, u.created_at, u.is_active, u.referral_code,
                 (SELECT COUNT(*) FROM users WHERE referrer_id = u.id) as direct_referrals,
                 (SELECT COALESCE(SUM(amount), 0) FROM commissions WHERE affiliate_id = u.id AND status = 'paid') as total_earnings,
                 (SELECT COALESCE(SUM(amount), 0) FROM commissions WHERE affiliate_id = u.id AND status = 'pending') as pending_earnings
@@ -477,7 +478,7 @@ export class UserModel {
       id: row.id,
       userId: row.id,
       referralCode: row.referral_code,
-      tier: row.tier ? { name: row.tier } : { name: 'Bronze' },
+      // tier: row.tier ? { name: row.tier } : { name: 'Bronze' },
       totalEarnings: parseFloat(row.total_earnings || 0),
       pendingEarnings: parseFloat(row.pending_earnings || 0),
       totalReferrals: parseInt(row.direct_referrals || 0),

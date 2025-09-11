@@ -26,35 +26,35 @@ export const getDashboard = asyncHandler(async (req: AuthRequest, res: Response)
   ]);
   
   // Calculate tier progress
-  const totalEarnings = commissionStats.totalEarnings;
-  let currentTier = 'Bronze';
-  let nextTier = 'Silver';
-  let progress = 0;
-  let requirement = 'Earn AED 500 to reach Silver';
+  // const totalEarnings = commissionStats.totalEarnings;
+  // let currentTier = 'Bronze';
+  // let nextTier = 'Silver';
+  // let progress = 0;
+  // let requirement = 'Earn AED 500 to reach Silver';
   
-  if (totalEarnings >= 5000) {
-    currentTier = 'Platinum';
-    nextTier = null;
-    progress = 100;
-    requirement = 'Maximum tier reached';
-  } else if (totalEarnings >= 2000) {
-    currentTier = 'Gold';
-    nextTier = 'Platinum';
-    progress = ((totalEarnings - 2000) / 3000) * 100;
-    requirement = 'Earn AED 5,000 total to reach Platinum';
-  } else if (totalEarnings >= 500) {
-    currentTier = 'Silver';
-    nextTier = 'Gold';
-    progress = ((totalEarnings - 500) / 1500) * 100;
-    requirement = 'Earn AED 2,000 total to reach Gold';
-  } else {
-    progress = (totalEarnings / 500) * 100;
-  }
+  // if (totalEarnings >= 5000) {
+  //   currentTier = 'Platinum';
+  //   nextTier = null;
+  //   progress = 100;
+  //   requirement = 'Maximum tier reached';
+  // } else if (totalEarnings >= 2000) {
+  //   currentTier = 'Gold';
+  //   nextTier = 'Platinum';
+  //   progress = ((totalEarnings - 2000) / 3000) * 100;
+  //   requirement = 'Earn AED 5,000 total to reach Platinum';
+  // } else if (totalEarnings >= 500) {
+  //   currentTier = 'Silver';
+  //   nextTier = 'Gold';
+  //   progress = ((totalEarnings - 500) / 1500) * 100;
+  //   requirement = 'Earn AED 2,000 total to reach Gold';
+  // } else {
+  //   progress = (totalEarnings / 500) * 100;
+  // }
   
-  // Update user tier if changed
-  if (req.user.tier !== currentTier) {
-    await UserModel.updateTier(userId, currentTier as any);
-  }
+  // // Update user tier if changed
+  // if (req.user.tier !== currentTier) {
+  //   await UserModel.updateTier(userId, currentTier as any);
+  // }
   
   res.json({
     stats: {
@@ -66,12 +66,12 @@ export const getDashboard = asyncHandler(async (req: AuthRequest, res: Response)
       level2Referrals: referralTree.totals.level2,
       level3Referrals: referralTree.totals.level3,
       conversionRate: linkStats.conversionRate,
-      tierProgress: {
-        currentTier,
-        nextTier,
-        progress: Math.round(progress),
-        requirement
-      }
+      // tierProgress: {
+      //   currentTier,
+      //   nextTier,
+      //   progress: Math.round(progress),
+      //   requirement
+      // }
     },
     recentCommissions: recentCommissions.slice(0, 5),
     linkStats,

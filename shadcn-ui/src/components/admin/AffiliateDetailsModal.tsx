@@ -98,15 +98,15 @@ const AffiliateDetailsModal: React.FC<AffiliateDetailsModalProps> = ({
         userId: affiliateData.id,
         referralCode: affiliateData.referral_code,
         level: 1, // Default level for affiliates
-        tier: { 
-          id: '1',
-          name: affiliateData.tier || 'Bronze',
-          minReferrals: 0,
-          minRevenue: 0,
-          commissionBoost: 0,
-          bonusAmount: 0,
-          benefits: []
-        },
+        // tier: { 
+        //   id: '1',
+        //   name: affiliateData.tier || 'Bronze',
+        //   minReferrals: 0,
+        //   minRevenue: 0,
+        //   commissionBoost: 0,
+        //   bonusAmount: 0,
+        //   benefits: []
+        // },
         totalEarnings: affiliateRes.data.stats?.paid || 0,
         pendingEarnings: affiliateRes.data.stats?.pending || 0,
         totalReferrals: affiliateRes.data.referralTree?.totals?.total || 0,
@@ -323,10 +323,10 @@ const AffiliateDetailsModal: React.FC<AffiliateDetailsModalProps> = ({
               <Badge variant={affiliate.user?.status === 'active' ? 'default' : 'secondary'}>
                 {affiliate.user?.status === 'active' ? 'Active' : 'Inactive'}
               </Badge>
-              <Badge variant="outline" className="flex items-center gap-1">
+              {/* <Badge variant="outline" className="flex items-center gap-1">
                 <Trophy className="w-3 h-3" />
                 {affiliate.tier?.name || 'Bronze'}
-              </Badge>
+              </Badge> */}
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -391,13 +391,13 @@ const AffiliateDetailsModal: React.FC<AffiliateDetailsModalProps> = ({
                       <span className="text-gray-600">Referral Code:</span>
                       <span className="font-medium">{affiliate.referralCode}</span>
                     </div>
-                    <div className="flex justify-between">
+                    {/* <div className="flex justify-between">
                       <span className="text-gray-600">Tier:</span>
                       <Badge variant="outline" className="flex items-center gap-1">
                         <Trophy className="w-3 h-3" />
                         {affiliate.tier?.name || 'Bronze'}
                       </Badge>
-                    </div>
+                    </div> */}
                     <div className="flex justify-between">
                       <span className="text-gray-600">Joined:</span>
                       <span className="font-medium">
