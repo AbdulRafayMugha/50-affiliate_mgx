@@ -26,7 +26,7 @@ interface ReferralUser {
   name: string;
   email: string;
   role: string;
-  tier: string;
+  // tier: string;
   isActive: boolean;
   createdAt: string;
   totalEarnings?: number;
@@ -127,18 +127,18 @@ const MyReferrals = () => {
     }
   };
 
-  const getTierIcon = (tier: string) => {
-    switch (tier.toLowerCase()) {
-      case 'platinum':
-        return <Trophy className="w-4 h-4 text-purple-600" />;
-      case 'gold':
-        return <Star className="w-4 h-4 text-yellow-600" />;
-      case 'silver':
-        return <Star className="w-4 h-4 text-gray-400" />;
-      default:
-        return <Users className="w-4 h-4 text-blue-600" />;
-    }
-  };
+  // const getTierIcon = (tier: string) => {
+  //   switch (tier.toLowerCase()) {
+  //     case 'platinum':
+  //       return <Trophy className="w-4 h-4 text-purple-600" />;
+  //     case 'gold':
+  //       return <Star className="w-4 h-4 text-yellow-600" />;
+  //     case 'silver':
+  //       return <Star className="w-4 h-4 text-gray-400" />;
+  //     default:
+  //       return <Users className="w-4 h-4 text-blue-600" />;
+  //   }
+  // };
 
   if (loading) {
     return (
@@ -347,11 +347,11 @@ const MyReferrals = () => {
                     <div className="flex-1">
                       <div className="flex items-center space-x-2 mb-1">
                         <h4 className="font-medium text-gray-900">{user.name}</h4>
-                        {getTierIcon(user.tier)}
+                        {/* {getTierIcon(user.tier)}
                         {getStatusBadge(user)}
                         {'level' in user && (
                           <Badge variant="outline">Level {user.level}</Badge>
-                        )}
+                        )} */}
                       </div>
                       <div className="flex items-center space-x-4 text-sm text-gray-600">
                         <span className="flex items-center">

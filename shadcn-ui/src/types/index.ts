@@ -16,7 +16,7 @@ export interface Affiliate {
   referralCode: string;
   parentAffiliateId?: string;
   level: number;
-  tier: AffiliateTier;
+  // tier: AffiliateTier;
   totalEarnings: number;
   pendingEarnings: number;
   totalReferrals: number;
@@ -29,15 +29,15 @@ export interface Affiliate {
   level3Referrals?: number;
 }
 
-export interface AffiliateTier {
-  id: string;
-  name: string;
-  minReferrals: number;
-  minRevenue: number;
-  commissionBoost: number;
-  bonusAmount: number;
-  benefits: string[];
-}
+// export interface AffiliateTier {
+//   id: string;
+//   name: string;
+//   minReferrals: number;
+//   minRevenue: number;
+//   commissionBoost: number;
+//   bonusAmount: number;
+//   benefits: string[];
+// }
 
 // Commission Types
 export interface Commission {
@@ -143,12 +143,12 @@ export interface AffiliateStats {
   level3Referrals: number;
   conversionRate: number;
   clickThroughRate: number;
-  tierProgress: {
-    currentTier: string;
-    nextTier?: string;
-    progress: number;
-    requirement: string;
-  };
+  // tierProgress: {
+  //   currentTier: string;
+  //   nextTier?: string;
+  //   progress: number;
+  //   requirement: string;
+  // };
 }
 
 // Analytics Types

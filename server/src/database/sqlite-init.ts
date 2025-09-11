@@ -37,7 +37,7 @@ const runSQLiteMigrations = async () => {
         role TEXT DEFAULT 'affiliate' CHECK (role IN ('admin', 'affiliate', 'client')),
         referrer_id TEXT REFERENCES users(id) ON DELETE SET NULL,
         referral_code TEXT UNIQUE NOT NULL,
-        tier TEXT DEFAULT 'Bronze' CHECK (tier IN ('Bronze', 'Silver', 'Gold', 'Platinum')),
+        -- tier TEXT DEFAULT 'Bronze' CHECK (tier IN ('Bronze', 'Silver', 'Gold', 'Platinum')), -- Temporarily disabled tier functionality
         is_active BOOLEAN DEFAULT 1,
         email_verified BOOLEAN DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,

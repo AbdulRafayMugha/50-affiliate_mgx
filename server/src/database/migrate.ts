@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS users (
   role VARCHAR(50) DEFAULT 'affiliate' CHECK (role IN ('admin', 'affiliate', 'client')),
   referrer_id UUID REFERENCES users(id) ON DELETE SET NULL,
   referral_code VARCHAR(255) UNIQUE NOT NULL,
-  tier VARCHAR(50) DEFAULT 'Bronze' CHECK (tier IN ('Bronze', 'Silver', 'Gold', 'Platinum')),
+  -- tier VARCHAR(50) DEFAULT 'Bronze' CHECK (tier IN ('Bronze', 'Silver', 'Gold', 'Platinum')), -- Temporarily disabled tier functionality
   is_active BOOLEAN DEFAULT TRUE,
   email_verified BOOLEAN DEFAULT FALSE,
   email_verification_token VARCHAR(255),

@@ -215,7 +215,7 @@ export const getAffiliateDetails = asyncHandler(async (req: AuthRequest, res: Re
         id: affiliate.id,
         name: affiliate.name,
         email: affiliate.email,
-        tier: affiliate.tier,
+        // tier: affiliate.tier,
         referral_code: affiliate.referral_code,
         created_at: affiliate.created_at,
         is_active: affiliate.is_active

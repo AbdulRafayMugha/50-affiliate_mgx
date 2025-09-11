@@ -60,24 +60,24 @@ const AffiliatesList: React.FC<AffiliatesListProps> = ({ onNavigate }) => {
     }
 
     // Filter by tier
-    if (selectedTier !== 'all') {
-      filtered = filtered.filter(affiliate => 
-        affiliate.tier?.name?.toLowerCase() === selectedTier.toLowerCase()
-      );
-    }
+    // if (selectedTier !== 'all') {
+    //   filtered = filtered.filter(affiliate => 
+    //     affiliate.tier?.name?.toLowerCase() === selectedTier.toLowerCase()
+    //   );
+    // }
 
     setFilteredAffiliates(filtered);
   };
 
-  const getTierColor = (tier: string) => {
-    switch (tier?.toLowerCase()) {
-      case 'bronze': return 'bg-orange-100 text-orange-800';
-      case 'silver': return 'bg-gray-100 text-gray-800';
-      case 'gold': return 'bg-yellow-100 text-yellow-800';
-      case 'platinum': return 'bg-purple-100 text-purple-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
+  // const getTierColor = (tier: string) => {
+  //   switch (tier?.toLowerCase()) {
+  //     case 'bronze': return 'bg-orange-100 text-orange-800';
+  //     case 'silver': return 'bg-gray-100 text-gray-800';
+  //     case 'gold': return 'bg-yellow-100 text-yellow-800';
+  //     case 'platinum': return 'bg-purple-100 text-purple-800';
+  //     default: return 'bg-gray-100 text-gray-800';
+  //   }
+  // };
 
   const getStatusColor = (isActive: boolean) => {
     return isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
@@ -191,7 +191,7 @@ const AffiliatesList: React.FC<AffiliatesListProps> = ({ onNavigate }) => {
               </div>
             </div>
             <div className="flex gap-2">
-              <select
+              {/* <select
                 value={selectedTier}
                 onChange={(e) => setSelectedTier(e.target.value)}
                 className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -201,7 +201,7 @@ const AffiliatesList: React.FC<AffiliatesListProps> = ({ onNavigate }) => {
                 <option value="silver">Silver</option>
                 <option value="gold">Gold</option>
                 <option value="platinum">Platinum</option>
-              </select>
+              </select> */}
               <Button variant="outline" onClick={loadAffiliates}>
                 <Filter className="h-4 w-4" />
               </Button>
@@ -224,7 +224,7 @@ const AffiliatesList: React.FC<AffiliatesListProps> = ({ onNavigate }) => {
               <thead>
                 <tr className="border-b">
                   <th className="text-left py-3 px-4 font-medium text-gray-900">Affiliate</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-900">Tier</th>
+                  {/* <th className="text-left py-3 px-4 font-medium text-gray-900">Tier</th> */}
                   <th className="text-left py-3 px-4 font-medium text-gray-900">Status</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-900">Referrals</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-900">Earnings</th>
@@ -245,11 +245,11 @@ const AffiliatesList: React.FC<AffiliatesListProps> = ({ onNavigate }) => {
                         </p>
                       </div>
                     </td>
-                    <td className="py-3 px-4">
+                    {/* <td className="py-3 px-4">
                       <Badge className={getTierColor(affiliate.tier?.name)}>
                         {affiliate.tier?.name || 'N/A'}
                       </Badge>
-                    </td>
+                    </td> */}
                     <td className="py-3 px-4">
                       <Badge className={getStatusColor(affiliate.isActive)}>
                         {affiliate.isActive ? 'Active' : 'Inactive'}

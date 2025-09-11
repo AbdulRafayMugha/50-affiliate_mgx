@@ -67,10 +67,10 @@ const seedCoordinators = async () => {
       
       // Create coordinator
       const { rows } = await pool.query(
-        `INSERT INTO users (email, password_hash, name, role, referral_code, tier, is_active, email_verified)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        `INSERT INTO users (email, password_hash, name, role, referral_code, is_active, email_verified)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
          RETURNING id, email, name, role, referral_code`,
-        [coordinator.email, password_hash, coordinator.name, coordinator.role, referral_code, 'Gold', true, true]
+        [coordinator.email, password_hash, coordinator.name, coordinator.role, referral_code, true, true]
       );
       
       console.log(`✅ Created coordinator: ${coordinator.name} (${coordinator.email})`);

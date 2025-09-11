@@ -229,7 +229,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
                     <div>
                       <p className="font-medium">{affiliate.user?.name}</p>
                       <p className="text-sm text-gray-500">
-                        {affiliate.totalReferrals} referrals • {affiliate.tier.name} tier
+                        {affiliate.totalReferrals} referrals {/* • {affiliate.tier.name} tier */}
                       </p>
                     </div>
                   </div>
