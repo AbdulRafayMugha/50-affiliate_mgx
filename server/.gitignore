@@ -1,8 +1,26 @@
-# Node.js dependencies
+# Node/npm
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+.npm/
+
+# TypeScript
+*.tsbuildinfo
+
+
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE/Editor
+.vscode/
+.idea/
+*.code-workspace
 
 # Environment variables
 .env
@@ -25,6 +43,11 @@ build/
 tmp/
 temp/
 
+# Build outputs
+server/dist/
+shadcn-ui/dist/
+shadcn-ui/build/
+
 # IDE files
 .vscode/
 .idea/
@@ -33,3 +56,35 @@ temp/
 
 # Misc
 coverage/
+
+# Caches
+.vite/
+shadcn-ui/.vite/
+shadcn-ui/node_modules/.vite/
+.cache/
+.parcel-cache/
+.eslintcache
+
+# Tests/coverage
+coverage/
+.tap/
+
+# Runtime logs
+logs/
+*.log
+server/logs/
+shadcn-ui/logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.swp
+*.swo
+
+# Uploaded runtime assets (if you store user uploads at runtime, ignore that dir)
+# server/uploads/
+# uploads/runtime/
+
+# Docker (optional)
+docker-data/
