@@ -24,7 +24,7 @@ import { toast } from '../../hooks/use-toast';
 
 interface Bonus {
   id: string;
-  type: 'signup' | 'milestone' | 'tier_upgrade' | 'special' | 'monthly' | 'target';
+  type: 'signup' | 'milestone' | /* 'tier_upgrade' | */ 'special' | 'monthly' | 'target';
   title: string;
   description: string;
   amount: number;
@@ -90,9 +90,9 @@ const BonusesRewards = () => {
         },
         {
           id: '3',
-          type: 'tier_upgrade',
-          title: 'Gold Tier Achievement',
-          description: 'Upgraded to Gold tier for exceptional performance',
+          type: 'milestone',
+          title: 'First 50 Referrals Milestone',
+          description: 'You successfully referred 50 new users!',
           amount: 250.00,
           status: 'paid',
           earnedAt: '2024-02-15T09:15:00Z',

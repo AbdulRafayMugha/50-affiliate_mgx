@@ -102,7 +102,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
       name: user.name,
       role: user.role,
       referral_code: user.referral_code,
-      tier: user.tier,
+      // tier: user.tier,
       coordinator_id: user.coordinator_id,
       email_verified: user.email_verified
     },
@@ -124,7 +124,7 @@ export const getProfile = asyncHandler(async (req: any, res: Response) => {
       name: user.name,
       role: user.role,
       referral_code: user.referral_code,
-      tier: user.tier,
+      // tier: user.tier,
       coordinator_id: user.coordinator_id,
       created_at: user.created_at
     }
@@ -167,7 +167,7 @@ export const updateProfile = asyncHandler(async (req: any, res: Response) => {
       name: updatedUser.name,
       role: updatedUser.role,
       referral_code: updatedUser.referral_code,
-      tier: updatedUser.tier,
+      // tier: updatedUser.tier,
       coordinator_id: updatedUser.coordinator_id
     }
   });

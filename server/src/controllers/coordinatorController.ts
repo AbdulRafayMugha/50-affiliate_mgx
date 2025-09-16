@@ -52,7 +52,7 @@ export const getAffiliateDetails = asyncHandler(async (req: any, res: Response) 
       id: affiliate.id,
       name: affiliate.name,
       email: affiliate.email,
-      tier: affiliate.tier,
+      // tier: affiliate.tier,
       isActive: affiliate.is_active,
       referralCode: affiliate.referral_code,
       createdAt: affiliate.created_at
@@ -213,7 +213,7 @@ export const registerAffiliate = asyncHandler(async (req: any, res: Response) =>
       name: affiliate.name,
       email: affiliate.email,
       referral_code: affiliate.referral_code,
-      tier: affiliate.tier
+      // tier: affiliate.tier
     }
   });
 });

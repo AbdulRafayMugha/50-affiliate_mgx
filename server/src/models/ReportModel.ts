@@ -1,5 +1,7 @@
+// src/models/ReportModel.ts
 import { pool } from '../database/init';
 import * as ExcelJS from 'exceljs';
+import { RowDataPacket } from 'mysql2';
 import { UserModel } from './User';
 
 export interface AffiliateReportData {
@@ -33,125 +35,154 @@ export interface AffiliateReportData {
   };
 }
 
+type DBRow = RowDataPacket & Record<string, any>;
+type CountsRow = RowDataPacket & {
+  total?: number | string;
+  sent?: number | string;
+  opened?: number | string;
+  clicked?: number | string;
+  converted?: number | string;
+  pending?: number | string;
+  approved?: number | string;
+  paid?: number | string;
+};
+
+
 export class ReportModel {
+  /**
+   * Return all affiliate summary data used by the reports.
+   */
   static async getAllAffiliateData(): Promise<AffiliateReportData[]> {
-    const { rows: affiliates } = await pool.query(`
-      SELECT 
-        u.id, u.name, u.email, u.referral_code, u.is_active,
-        u.created_at
-      FROM users u 
-      WHERE u.role = 'affiliate'
-      ORDER BY u.created_at DESC
-    `);
+    // Fetch affiliates
+    const [affiliatesRows] = await pool.query<RowDataPacket[]>(
+      `SELECT id, name, email, referral_code, is_active, created_at
+       FROM users
+       WHERE role = ?
+       ORDER BY created_at DESC`,
+      ['affiliate']
+    );
 
     const reportData: AffiliateReportData[] = [];
 
-    for (const affiliate of affiliates) {
-      // Get referral counts - we need to calculate levels properly
-      const { rows: directReferrals } = await pool.query(`
-        SELECT id FROM users WHERE referrer_id = $1
-      `, [affiliate.id]);
-      
-      const level1Count = directReferrals.length;
-      let level2Count = 0;
-      let level3Count = 0;
-      
-      // Get level 2 referrals
-      if (directReferrals.length > 0) {
-        const directReferralIds = directReferrals.map(r => r.id);
-        if (directReferralIds.length > 0) {
-          const { rows: level2Referrals } = await pool.query(`
-            SELECT id FROM users WHERE referrer_id = ANY($1)
-          `, [directReferralIds]);
-          level2Count = level2Referrals.length;
-          
-          // Get level 3 referrals
-          if (level2Referrals.length > 0) {
-            const level2ReferralIds = level2Referrals.map(r => r.id);
-            if (level2ReferralIds.length > 0) {
-              const { rows: level3Referrals } = await pool.query(`
-                SELECT id FROM users WHERE referrer_id = ANY($1)
-              `, [level2ReferralIds]);
-              level3Count = level3Referrals.length;
-            }
+    for (const affiliate of affiliatesRows) {
+      try {
+        const affiliateId = String(affiliate.id);
+
+        // Level 1 referrals (direct)
+        const [directRefRows] = await pool.query<RowDataPacket[]>(
+          `SELECT id FROM users WHERE referrer_id = ?`,
+          [affiliateId]
+        );
+        const level1Count = directRefRows.length;
+
+        // Level 2 referrals (those referred by level1)
+        let level2Count = 0;
+        let level3Count = 0;
+
+        if (directRefRows.length > 0) {
+          const directIds = directRefRows.map(r => String(r.id));
+          // build placeholders
+          const placeholders1 = directIds.map(() => '?').join(',');
+          const [level2Rows] = await pool.query<RowDataPacket[]>(
+            `SELECT id FROM users WHERE referrer_id IN (${placeholders1})`,
+            directIds
+          );
+          level2Count = level2Rows.length;
+
+          if (level2Rows.length > 0) {
+            const level2Ids = level2Rows.map(r => String(r.id));
+            const placeholders2 = level2Ids.map(() => '?').join(',');
+            const [level3Rows] = await pool.query<RowDataPacket[]>(
+              `SELECT id FROM users WHERE referrer_id IN (${placeholders2})`,
+              level2Ids
+            );
+            level3Count = level3Rows.length;
           }
         }
+
+        // Email invite counts (email_invites table)
+        const [emailCountsRows] = await pool.query<RowDataPacket[]>(
+  `SELECT
+     COUNT(*) AS total,
+     SUM(CASE WHEN status = 'sent' THEN 1 ELSE 0 END) AS sent,
+     SUM(CASE WHEN status = 'opened' THEN 1 ELSE 0 END) AS opened,
+     SUM(CASE WHEN status = 'clicked' THEN 1 ELSE 0 END) AS clicked,
+     SUM(CASE WHEN status = 'converted' THEN 1 ELSE 0 END) AS converted
+   FROM email_invites
+   WHERE affiliate_id = ?`,
+  [affiliateId]
+);
+        const emailCounts = (emailCountsRows[0] ?? {}) as CountsRow;
+
+        // Commission counts
+       const [commissionCountsRows] = await pool.query<RowDataPacket[]>(
+  `SELECT
+     COUNT(*) AS total,
+     SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending,
+     SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) AS approved,
+     SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END) AS paid
+   FROM commissions
+   WHERE affiliate_id = ?`,
+  [affiliateId]
+);
+        const commissionCounts = (commissionCountsRows[0] ?? {}) as CountsRow;
+
+        const toNum = (v: any) => (v === undefined || v === null ? 0 : Number(v));
+
+        // Determine tier (simple heuristic shown in your original code)
+        const totalReferrals = level1Count + level2Count + level3Count;
+        let tier = 'Starter';
+        if (totalReferrals >= 50) tier = 'Gold';
+        else if (totalReferrals >= 20) tier = 'Silver';
+        else if (totalReferrals >= 5) tier = 'Bronze';
+
+        reportData.push({
+          affiliate: {
+            id: affiliateId,
+            name: affiliate.name || 'N/A',
+            email: affiliate.email || '',
+            referral_code: affiliate.referral_code || '',
+            tier,
+            status: (affiliate.is_active === 1 || affiliate.is_active === true) ? 'Active' : 'Inactive',
+            created_at: affiliate.created_at ? new Date(affiliate.created_at).toISOString() : new Date().toISOString()
+          },
+          referrals: {
+            level1: level1Count,
+            level2: level2Count,
+            level3: level3Count,
+            total: totalReferrals
+          },
+          emailInvites: {
+            total: toNum(emailCounts.total),
+            sent: toNum(emailCounts.sent),
+            opened: toNum(emailCounts.opened),
+            clicked: toNum(emailCounts.clicked),
+            converted: toNum(emailCounts.converted)
+          },
+          commissions: {
+            total: toNum(commissionCounts.total),
+            pending: toNum(commissionCounts.pending),
+            approved: toNum(commissionCounts.approved),
+            paid: toNum(commissionCounts.paid)
+          }
+        });
+      } catch (err) {
+        // Log and continue — a single affiliate failing shouldn't break the whole report
+        console.error(`Error preparing report entry for affiliate ${affiliate.id}:`, err);
+        continue;
       }
-
-      // Get email invite counts
-      const { rows: emailCounts } = await pool.query(`
-        SELECT 
-          COUNT(*) as total,
-          COUNT(CASE WHEN status = 'sent' THEN 1 END) as sent,
-          COUNT(CASE WHEN status = 'opened' THEN 1 END) as opened,
-          COUNT(CASE WHEN status = 'clicked' THEN 1 END) as clicked,
-          COUNT(CASE WHEN status = 'converted' THEN 1 END) as converted
-        FROM email_invites 
-        WHERE affiliate_id = $1
-      `, [affiliate.id]);
-
-      // Get commission counts
-      const { rows: commissionCounts } = await pool.query(`
-        SELECT 
-          COUNT(*) as total,
-          COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending,
-          COUNT(CASE WHEN status = 'approved' THEN 1 END) as approved,
-          COUNT(CASE WHEN status = 'paid' THEN 1 END) as paid
-        FROM commissions 
-        WHERE affiliate_id = $1
-      `, [affiliate.id]);
-
-      // Calculate tier based on total referrals
-      const totalReferrals = level1Count + level2Count + level3Count;
-      let tier = 'Starter';
-      if (totalReferrals >= 50) {
-        tier = 'Gold';
-      } else if (totalReferrals >= 20) {
-        tier = 'Silver';
-      } else if (totalReferrals >= 5) {
-        tier = 'Bronze';
-      }
-
-      reportData.push({
-        affiliate: {
-          id: affiliate.id,
-          name: affiliate.name || 'N/A',
-          email: affiliate.email,
-          referral_code: affiliate.referral_code,
-          tier: tier,
-          status: affiliate.is_active ? 'Active' : 'Inactive',
-          created_at: affiliate.created_at
-        },
-        referrals: {
-          level1: level1Count,
-          level2: level2Count,
-          level3: level3Count,
-          total: level1Count + level2Count + level3Count
-        },
-        emailInvites: {
-          total: parseInt(emailCounts[0]?.total || '0'),
-          sent: parseInt(emailCounts[0]?.sent || '0'),
-          opened: parseInt(emailCounts[0]?.opened || '0'),
-          clicked: parseInt(emailCounts[0]?.clicked || '0'),
-          converted: parseInt(emailCounts[0]?.converted || '0')
-        },
-        commissions: {
-          total: parseInt(commissionCounts[0]?.total || '0'),
-          pending: parseInt(commissionCounts[0]?.pending || '0'),
-          approved: parseInt(commissionCounts[0]?.approved || '0'),
-          paid: parseInt(commissionCounts[0]?.paid || '0')
-        }
-      });
     }
 
     return reportData;
   }
 
+  /**
+   * Generate a general affiliate Excel report and return as Buffer.
+   */
   static async generateExcelReport(): Promise<Buffer> {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Affiliate Report');
 
-    // Set up headers
     worksheet.columns = [
       { header: 'Affiliate ID', key: 'id', width: 36 },
       { header: 'Name', key: 'name', width: 20 },
@@ -175,7 +206,6 @@ export class ReportModel {
       { header: 'Paid Commissions', key: 'paid_commissions', width: 15 }
     ];
 
-    // Style the header row
     const headerRow = worksheet.getRow(1);
     headerRow.font = { bold: true, color: { argb: 'FFFFFF' } };
     headerRow.fill = {
@@ -185,10 +215,8 @@ export class ReportModel {
     };
     headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
 
-    // Get data
     const data = await this.getAllAffiliateData();
 
-    // Add data rows
     data.forEach((item, index) => {
       const row = worksheet.addRow({
         id: item.affiliate.id,
@@ -213,7 +241,6 @@ export class ReportModel {
         paid_commissions: item.commissions.paid
       });
 
-      // Alternate row colors for better readability
       if (index % 2 === 1) {
         row.fill = {
           type: 'pattern',
@@ -221,12 +248,10 @@ export class ReportModel {
           fgColor: { argb: 'F2F2F2' }
         };
       }
-
-      // Center align numeric columns
       row.alignment = { horizontal: 'center', vertical: 'middle' };
     });
 
-    // Add summary row at the bottom
+    // Summary row
     const summaryRow = worksheet.addRow({
       id: 'TOTAL',
       name: '',
@@ -235,22 +260,21 @@ export class ReportModel {
       tier: '',
       status: '',
       created_at: '',
-      level1: data.reduce((sum, item) => sum + item.referrals.level1, 0),
-      level2: data.reduce((sum, item) => sum + item.referrals.level2, 0),
-      level3: data.reduce((sum, item) => sum + item.referrals.level3, 0),
-      total_referrals: data.reduce((sum, item) => sum + item.referrals.total, 0),
-      total_emails: data.reduce((sum, item) => sum + item.emailInvites.total, 0),
-      sent_emails: data.reduce((sum, item) => sum + item.emailInvites.sent, 0),
-      opened_emails: data.reduce((sum, item) => sum + item.emailInvites.opened, 0),
-      clicked_emails: data.reduce((sum, item) => sum + item.emailInvites.clicked, 0),
-      converted_emails: data.reduce((sum, item) => sum + item.emailInvites.converted, 0),
-      total_commissions: data.reduce((sum, item) => sum + item.commissions.total, 0),
-      pending_commissions: data.reduce((sum, item) => sum + item.commissions.pending, 0),
-      approved_commissions: data.reduce((sum, item) => sum + item.commissions.approved, 0),
-      paid_commissions: data.reduce((sum, item) => sum + item.commissions.paid, 0)
+      level1: data.reduce((s, it) => s + it.referrals.level1, 0),
+      level2: data.reduce((s, it) => s + it.referrals.level2, 0),
+      level3: data.reduce((s, it) => s + it.referrals.level3, 0),
+      total_referrals: data.reduce((s, it) => s + it.referrals.total, 0),
+      total_emails: data.reduce((s, it) => s + it.emailInvites.total, 0),
+      sent_emails: data.reduce((s, it) => s + it.emailInvites.sent, 0),
+      opened_emails: data.reduce((s, it) => s + it.emailInvites.opened, 0),
+      clicked_emails: data.reduce((s, it) => s + it.emailInvites.clicked, 0),
+      converted_emails: data.reduce((s, it) => s + it.emailInvites.converted, 0),
+      total_commissions: data.reduce((s, it) => s + it.commissions.total, 0),
+      pending_commissions: data.reduce((s, it) => s + it.commissions.pending, 0),
+      approved_commissions: data.reduce((s, it) => s + it.commissions.approved, 0),
+      paid_commissions: data.reduce((s, it) => s + it.commissions.paid, 0)
     });
 
-    // Style the summary row
     summaryRow.font = { bold: true };
     summaryRow.fill = {
       type: 'pattern',
@@ -259,9 +283,8 @@ export class ReportModel {
     };
     summaryRow.alignment = { horizontal: 'center', vertical: 'middle' };
 
-    // Add borders to all cells
-    worksheet.eachRow((row, rowNumber) => {
-      row.eachCell((cell) => {
+    worksheet.eachRow((r) => {
+      r.eachCell((cell) => {
         cell.border = {
           top: { style: 'thin' },
           left: { style: 'thin' },
@@ -271,47 +294,40 @@ export class ReportModel {
       });
     });
 
-    // Generate the Excel file as buffer
     const buffer = await workbook.xlsx.writeBuffer();
     return buffer as unknown as Buffer;
   }
 
+  /**
+   * Generate coordinator-level report (summary + coordinator details sheet).
+   * Uses UserModel.getAllCoordinators() and UserModel.getAffiliatesByCoordinator().
+   */
   static async generateCoordinatorExcelReport(): Promise<Buffer> {
     const workbook = new ExcelJS.Workbook();
-    
-    // Create Summary Sheet
+
     const summarySheet = workbook.addWorksheet('Summary');
-    
-    // Create Main Coordinator Report Sheet
     const coordinatorReportSheet = workbook.addWorksheet('Coordinator Report');
 
-    // Get coordinator data
-    const coordinators = await UserModel.getAllCoordinators();
-    
-    // Summary Sheet Setup
+    // Summary sheet columns
     summarySheet.columns = [
       { header: 'Metric', key: 'metric', width: 25 },
       { header: 'Value', key: 'value', width: 20 },
       { header: 'Description', key: 'description', width: 40 }
     ];
-
-    // Style summary header
     const summaryHeader = summarySheet.getRow(1);
     summaryHeader.font = { bold: true, color: { argb: 'FFFFFF' } };
-    summaryHeader.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: '366092' }
-    };
+    summaryHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '366092' } };
     summaryHeader.alignment = { horizontal: 'center', vertical: 'middle' };
 
-    // Add summary data
+    // Fetch coordinators via UserModel (assumed implemented)
+    const coordinators = await UserModel.getAllCoordinators();
+
     const totalCoordinators = coordinators.length;
-    const activeCoordinators = coordinators.filter(c => c.is_active).length;
-    const totalAffiliates = coordinators.reduce((sum, c) => sum + parseInt(c.affiliate_count), 0);
-    const activeAffiliates = coordinators.reduce((sum, c) => sum + parseInt(c.active_affiliate_count), 0);
-    const totalCommissions = coordinators.reduce((sum, c) => sum + parseFloat(c.total_commissions), 0);
-    const totalReferrals = coordinators.reduce((sum, c) => sum + parseInt(c.total_referrals), 0);
+    const activeCoordinators = coordinators.filter(c => c.is_active === 1 || c.is_active === true).length;
+    const totalAffiliates = coordinators.reduce((s, c) => s + Number(c.affiliate_count || 0), 0);
+    const activeAffiliates = coordinators.reduce((s, c) => s + Number(c.active_affiliate_count || 0), 0);
+    const totalCommissions = coordinators.reduce((s, c) => s + Number(c.total_commissions || 0), 0);
+    const totalReferrals = coordinators.reduce((s, c) => s + Number(c.total_referrals || 0), 0);
 
     const summaryData = [
       { metric: 'Total Coordinators', value: totalCoordinators, description: 'Number of registered coordinators' },
@@ -324,19 +340,15 @@ export class ReportModel {
       { metric: 'Report Generated', value: new Date().toLocaleDateString(), description: 'Date this report was generated' }
     ];
 
-    summaryData.forEach((item, index) => {
+    summaryData.forEach((item, i) => {
       const row = summarySheet.addRow(item);
-      if (index % 2 === 1) {
-        row.fill = {
-          type: 'pattern',
-          pattern: 'solid',
-          fgColor: { argb: 'F2F2F2' }
-        };
+      if (i % 2 === 1) {
+        row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F2F2F2' } };
       }
       row.alignment = { horizontal: 'left', vertical: 'middle' };
     });
 
-    // Coordinator Report Sheet Setup
+    // Coordinator report columns
     coordinatorReportSheet.columns = [
       { header: 'Coordinator Name', key: 'coordinator_name', width: 25 },
       { header: 'Coordinator Email', key: 'coordinator_email', width: 30 },
@@ -350,25 +362,18 @@ export class ReportModel {
       { header: 'Pending Commissions', key: 'pending_commissions', width: 18 },
       { header: 'Joined Date', key: 'joined_date', width: 15 }
     ];
-
-    // Style coordinator report header
     const coordinatorReportHeader = coordinatorReportSheet.getRow(1);
     coordinatorReportHeader.font = { bold: true, color: { argb: 'FFFFFF' } };
-    coordinatorReportHeader.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: '366092' }
-    };
+    coordinatorReportHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '366092' } };
     coordinatorReportHeader.alignment = { horizontal: 'center', vertical: 'middle' };
 
-    // Add coordinator and affiliate data in table format
+    // Fill coordinator report
     let rowIndex = 0;
     for (const coordinator of coordinators) {
       try {
         const networkData = await UserModel.getAffiliatesByCoordinator(coordinator.id, 1, 1000);
-        
-        if (networkData.affiliates.length === 0) {
-          // Add row for coordinator with no affiliates
+
+        if (!networkData || !Array.isArray(networkData.affiliates) || networkData.affiliates.length === 0) {
           const row = coordinatorReportSheet.addRow({
             coordinator_name: coordinator.name,
             coordinator_email: coordinator.email,
@@ -382,53 +387,41 @@ export class ReportModel {
             pending_commissions: 'AED 0.00',
             joined_date: 'N/A'
           });
-          
-          if (rowIndex % 2 === 1) {
-            row.fill = {
-              type: 'pattern',
-              pattern: 'solid',
-              fgColor: { argb: 'F2F2F2' }
-            };
-          }
+          if (rowIndex % 2 === 1) row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F2F2F2' } };
           row.alignment = { horizontal: 'center', vertical: 'middle' };
           rowIndex++;
-        } else {
-          // Add rows for each affiliate under this coordinator
-          for (const affiliate of networkData.affiliates) {
-            const row = coordinatorReportSheet.addRow({
-              coordinator_name: coordinator.name,
-              coordinator_email: coordinator.email,
-              coordinator_status: coordinator.is_active ? 'Active' : 'Inactive',
-              affiliate_name: affiliate.user.name,
-              affiliate_email: affiliate.user.email,
-              affiliate_status: affiliate.user.status,
-              affiliate_tier: affiliate.tier.name,
-              referral_count: affiliate.totalReferrals,
-              commission_earned: `AED ${affiliate.totalEarnings.toFixed(2)}`,
-              pending_commissions: `AED ${affiliate.pendingEarnings.toFixed(2)}`,
-              joined_date: new Date(affiliate.createdAt).toLocaleDateString()
-            });
-            
-            if (rowIndex % 2 === 1) {
-              row.fill = {
-                type: 'pattern',
-                pattern: 'solid',
-                fgColor: { argb: 'F2F2F2' }
-              };
-            }
-            row.alignment = { horizontal: 'center', vertical: 'middle' };
-            rowIndex++;
-          }
+          continue;
         }
-      } catch (error) {
-        console.error(`Error fetching network data for coordinator ${coordinator.id}:`, error);
+
+        for (const affiliateItem of networkData.affiliates) {
+          const user = affiliateItem.user || {};
+          const row = coordinatorReportSheet.addRow({
+            coordinator_name: coordinator.name,
+            coordinator_email: coordinator.email,
+            coordinator_status: coordinator.is_active ? 'Active' : 'Inactive',
+            affiliate_name: user.name || 'N/A',
+            affiliate_email: user.email || 'N/A',
+            affiliate_status: (user.status || 'N/A'),
+            affiliate_tier: (affiliateItem.tier && affiliateItem.tier.name) ? affiliateItem.tier.name : 'N/A',
+            referral_count: Number(affiliateItem.totalReferrals || 0),
+            commission_earned: `AED ${Number(affiliateItem.totalEarnings || 0).toFixed(2)}`,
+            pending_commissions: `AED ${Number(affiliateItem.pendingEarnings || 0).toFixed(2)}`,
+            joined_date: affiliateItem.createdAt ? new Date(affiliateItem.createdAt).toLocaleDateString() : 'N/A'
+          });
+
+          if (rowIndex % 2 === 1) row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F2F2F2' } };
+          row.alignment = { horizontal: 'center', vertical: 'middle' };
+          rowIndex++;
+        }
+      } catch (err) {
+        console.error(`Error fetching network data for coordinator ${coordinator.id}:`, err);
       }
     }
 
-    // Add borders to all sheets
+    // Add borders
     [summarySheet, coordinatorReportSheet].forEach(sheet => {
-      sheet.eachRow((row, rowNumber) => {
-        row.eachCell((cell) => {
+      sheet.eachRow((r) => {
+        r.eachCell((cell) => {
           cell.border = {
             top: { style: 'thin' },
             left: { style: 'thin' },
@@ -439,7 +432,6 @@ export class ReportModel {
       });
     });
 
-    // Generate the Excel file as buffer
     const buffer = await workbook.xlsx.writeBuffer();
     return buffer as unknown as Buffer;
   }

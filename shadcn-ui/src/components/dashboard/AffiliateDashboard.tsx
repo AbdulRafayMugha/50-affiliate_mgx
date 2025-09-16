@@ -189,10 +189,10 @@ const AffiliateDashboard = () => {
           <h1 className="text-3xl font-bold text-gray-900">Welcome, {user?.name}!</h1>
           <p className="text-gray-600">Here's your affiliate performance overview</p>
         </div>
-        <Badge variant="outline" className="flex items-center gap-1">
+        {/* <Badge variant="outline" className="flex items-center gap-1">
           <Trophy className="w-3 h-3" />
           {stats.tierProgress.currentTier} Tier
-        </Badge>
+        </Badge> */}
       </div>
 
       {/* Key Metrics */}
@@ -327,7 +327,7 @@ const AffiliateDashboard = () => {
         </Card>
 
         {/* Tier Progress */}
-        <Card>
+        {/* <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Trophy className="w-5 h-5" />
@@ -347,7 +347,7 @@ const AffiliateDashboard = () => {
               {stats.tierProgress.progress}% to {stats.tierProgress.nextTier || 'Maximum Tier'}
             </p>
           </CardContent>
-        </Card>
+        </Card> */}
       </div>
 
       {/* Referral Breakdown */}
