@@ -1,0 +1,27 @@
+{
+  "version": 2,
+  "name": "al-syed-affiliate",
+  "builds": [
+    {
+      "src": "shadcn-ui/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "shadcn-ui/dist"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "https://your-backend-domain-or-vercel-function.example.com/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "shadcn-ui/dist/$1"
+    }
+  ],
+  "env": {
+    "VITE_API_BASE_URL": "https://your-backend-domain-or-vercel-function.example.com",
+    "VITE_APP_ENV": "production"
+  }
+}
