@@ -45,6 +45,21 @@ function toNumber(value: unknown): number {
   return Number.isNaN(n) ? 0 : n;
 }
 
+/**
+ * Convert a Date to MySQL DATETIME string 'YYYY-MM-DD HH:MM:SS'
+ * Return null if input is falsy.
+ */
+function toMySqlDatetime(d?: Date | null): string | null {
+  if (!d) return null;
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const hh = String(d.getHours()).padStart(2, '0');
+  const min = String(d.getMinutes()).padStart(2, '0');
+  const ss = String(d.getSeconds()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}`;
+}
+
 export class UserModel {
   static async getTopAffiliates(limit: number = 5): Promise<any[]> {
     const [rows] = await pool.query<Row[]>(
@@ -97,8 +112,8 @@ export class UserModel {
       referralCode: row.referral_code,
       totalEarnings: toNumber(row.total_earnings),
       pendingEarnings: toNumber(row.pending_earnings),
-      totalReferrals: parseInt(row.total_referrals || 0),
-      activeReferrals: parseInt(row.active_referrals || 0),
+      totalReferrals: parseInt(row.total_referrals || '0'),
+      activeReferrals: parseInt(row.active_referrals || '0'),
       conversionRate: toNumber(row.conversion_rate)
     }));
   }
@@ -119,7 +134,8 @@ export class UserModel {
           'SELECT id FROM users WHERE referral_code = ?',
           [referral_code]
         );
-        isUnique = (exists && exists.length === 0);
+        // exists is an array; if length === 0 then code is unique
+        isUnique = Array.isArray(exists) && exists.length === 0;
       }
 
       // Resolve referrer and coordinator logic
@@ -127,7 +143,7 @@ export class UserModel {
       let coordinatorId: string | null = input.coordinator_id || input.created_by_coordinator || null;
 
       // Super Coordinator ID (Hadi)
-      const SUPER_COORDINATOR_ID = 'e81feb9a-6d2e-4540-a092-1005ecac6fa1';
+      const SUPER_COORDINATOR_ID = '269c9c46-9247-11f0-94da-5453edad5aca';
 
       if (input.referrer_code) {
         const [rows] = await client.query<Row[]>(
@@ -149,44 +165,70 @@ export class UserModel {
         coordinatorId = SUPER_COORDINATOR_ID;
       }
 
-      // Insert user
-      const [insertedRows] = await client.query<Row[]>(
-        `INSERT INTO users (email, password_hash, name, role, referrer_id, coordinator_id, referral_code, email_verification_token, email_verification_expires)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-         RETURNING id, email, name, role, referrer_id, coordinator_id, referral_code, is_active, email_verified, email_verification_token, email_verification_expires, created_at, updated_at`,
+      // Prepare values
+      const role = input.role || 'affiliate';
+      const emailVerificationToken = input.email_verification_token ?? null;
+      // Convert to MySQL DATETIME string (or null)
+      const emailVerificationExpires = toMySqlDatetime(input.email_verification_expires ?? null);
+
+      // 1) Insert user
+      console.log('DEBUG: coordinatorId before insert:', coordinatorId);
+      const check_coordinator = await client.query<Row[]>(
+        'SELECT id, name FROM users WHERE id = ? AND role = ? LIMIT 1',
+        [coordinatorId, 'coordinator']
+      );
+      console.log('DEBUG: Assigned coordinator:', check_coordinator[0]);
+
+      const newId = uuidv4();
+
+      await client.query<ResultSetHeader>(
+        `INSERT INTO users 
+          (id, email, password_hash, name, role, referrer_id, coordinator_id, referral_code, email_verification_token, email_verification_expires)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
+          newId, // explicit UUID id
           input.email,
           password_hash,
           input.name,
-          input.role || 'affiliate',
-          referrer_id,
-          coordinatorId,
+          role,
+          referrer_id ?? null,
+          coordinatorId ?? null,
           referral_code,
-          input.email_verification_token || null,
-          input.email_verification_expires ? input.email_verification_expires.toISOString() : null
+          emailVerificationToken,
+          emailVerificationExpires
         ]
       );
 
-      const userRow = insertedRows && insertedRows[0];
+      // 2) Select the inserted row and type it as Row (then map to User)
+      const [rows] = await client.query<Row[]>(
+        `SELECT id, email, name, role, referrer_id, coordinator_id, referral_code, is_active, email_verified,
+                email_verification_token, email_verification_expires, created_at, updated_at
+         FROM users
+         WHERE id = ?`,
+        [newId]
+      );
+
+      const userRow = rows && rows[0];
       if (!userRow) {
         await client.rollback();
-        throw new Error('Failed to create user');
+        throw new Error(`Insert succeeded but unable to fetch inserted user id=${newId}`);
       }
 
       // If created user is affiliate - create affiliate link and give signup bonus
-      if ((userRow.role || input.role || 'affiliate') === 'affiliate') {
+      if ((userRow.role || role) === 'affiliate') {
         await client.query<ResultSetHeader>(
           `INSERT INTO affiliate_links (affiliate_id, link_code) VALUES (?, ?)`,
           [userRow.id, referral_code]
         );
 
         await client.query<ResultSetHeader>(
-          `INSERT INTO bonuses (affiliate_id, type, description, amount) VALUES (?, 'signup', 'Welcome bonus for joining as affiliate', 10.00)`,
-          [userRow.id]
+          `INSERT INTO bonuses (affiliate_id, type, description, amount) VALUES (?, 'signup', 'Welcome bonus for joining as affiliate', ?)`,
+          [userRow.id, 10.0]
         );
       }
 
       await client.commit();
+
       // format the returned user to match interface
       return {
         id: userRow.id,
@@ -204,7 +246,7 @@ export class UserModel {
         updated_at: new Date(userRow.updated_at)
       } as User;
     } catch (err) {
-      await client.rollback();
+      try { await client.rollback(); } catch (_) { /* ignore rollback error */ }
       throw err;
     } finally {
       client.release();
@@ -363,9 +405,9 @@ export class UserModel {
         isActive: Boolean(u.is_active),
         createdAt: new Date(u.created_at),
         totalEarnings: toNumber(u.total_earnings),
-        totalReferrals: parseInt(u.total_referrals || 0),
-        conversionRate: (toNumber(u.total_sales) > 0 && parseInt(u.total_referrals || 0) > 0)
-          ? (toNumber(u.total_sales) / parseInt(u.total_referrals || 0)) * 100
+        totalReferrals: parseInt(u.total_referrals || '0'),
+        conversionRate: (toNumber(u.total_sales) > 0 && parseInt(u.total_referrals || '0') > 0)
+          ? (toNumber(u.total_sales) / parseInt(u.total_referrals || '0')) * 100
           : 0
       });
 
@@ -392,16 +434,22 @@ export class UserModel {
   }
 
   static async updateProfile(userId: string, updates: { name?: string; email?: string }): Promise<User> {
+    // MariaDB / MySQL does not support UPDATE ... RETURNING consistently, so do UPDATE then SELECT
     const setClause = Object.keys(updates)
-      .map((key, idx) => `${key} = ?`)
+      .map((key) => `${key} = ?`)
       .join(', ');
     const values = Object.values(updates);
-    const sql = `UPDATE users SET ${setClause}, updated_at = CURRENT_TIMESTAMP WHERE id = ? RETURNING id, email, name, role, referrer_id, referral_code, is_active, email_verified, created_at, updated_at`;
+    const updateSql = `UPDATE users SET ${setClause}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`;
+    await pool.query<ResultSetHeader>(updateSql, [...values, userId]);
+
+    // then select the updated user
     const [rows] = await pool.query<Row[]>(
-      sql,
-      [...values, userId]
+      `SELECT id, email, name, role, referrer_id, coordinator_id, referral_code, is_active, email_verified, created_at, updated_at
+       FROM users WHERE id = ? LIMIT 1`,
+      [userId]
     );
     const r = rows && rows[0];
+    if (!r) throw new Error('User not found after update');
     return {
       id: r.id,
       email: r.email,
@@ -434,6 +482,29 @@ export class UserModel {
 
   static async deleteUser(userId: string): Promise<void> {
     await pool.query<ResultSetHeader>('DELETE FROM users WHERE id = ?', [userId]);
+  }
+
+  static async updateVerificationToken(userId: string, token: string, expires: Date): Promise<void> {
+    const expiresSql = toMySqlDatetime(expires);
+    await pool.query<ResultSetHeader>(
+      'UPDATE users SET email_verification_token = ?, email_verification_expires = ? WHERE id = ?',
+      [token, expiresSql, userId]
+    );
+  }
+
+  static async updatePasswordResetToken(userId: string, token: string, expires: Date): Promise<void> {
+    const expiresSql = toMySqlDatetime(expires);
+    await pool.query<ResultSetHeader>(
+      'UPDATE users SET password_reset_token = ?, password_reset_expires = ? WHERE id = ?',
+      [token, expiresSql, userId]
+    );
+  }
+
+  static async clearPasswordResetToken(userId: string): Promise<void> {
+    await pool.query<ResultSetHeader>(
+      'UPDATE users SET password_reset_token = NULL, password_reset_expires = NULL WHERE id = ?',
+      [userId]
+    );
   }
 
   private static generateReferralCode(): string {
@@ -476,8 +547,8 @@ export class UserModel {
       referralCode: row.referral_code,
       totalEarnings: toNumber(row.total_earnings),
       pendingEarnings: toNumber(row.pending_earnings),
-      totalReferrals: parseInt(row.direct_referrals || 0),
-      activeReferrals: parseInt(row.direct_referrals || 0),
+      totalReferrals: parseInt(row.direct_referrals || '0'),
+      activeReferrals: parseInt(row.direct_referrals || '0'),
       conversionRate: 0,
       createdAt: new Date(row.created_at),
       user: {
@@ -531,8 +602,8 @@ export class UserModel {
       referralCode: row.referral_code,
       totalEarnings: toNumber(row.total_earnings),
       pendingEarnings: toNumber(row.pending_earnings),
-      totalReferrals: parseInt(row.direct_referrals || 0),
-      activeReferrals: parseInt(row.direct_referrals || 0),
+      totalReferrals: parseInt(row.direct_referrals || '0'),
+      activeReferrals: parseInt(row.direct_referrals || '0'),
       conversionRate: 0,
       createdAt: new Date(row.created_at),
       user: {
@@ -576,7 +647,7 @@ export class UserModel {
         (SELECT COUNT(*) FROM users WHERE coordinator_id = ? AND role = 'affiliate' AND is_active = 1) as active_affiliates,
         (SELECT COALESCE(SUM(amount), 0) FROM commissions c JOIN users u ON c.affiliate_id = u.id WHERE u.coordinator_id = ? AND c.status = 'paid') as total_commissions,
         (SELECT COALESCE(SUM(amount), 0) FROM commissions c JOIN users u ON c.affiliate_id = u.id WHERE u.coordinator_id = ? AND c.status = 'pending') as pending_commissions,
-        (SELECT COUNT(*) FROM transactions t JOIN users u ON t.referrer_id = u.id WHERE u.coordinator_id = ?) as total_referrals
+        (SELECT COUNT(*) FROM transactions t JOIN users u ON t.referrer_id = u.id WHERE u.coordinator_id ?) as total_referrals
       `,
       [coordinatorId, coordinatorId, coordinatorId, coordinatorId, coordinatorId]
     );
@@ -706,27 +777,6 @@ export class UserModel {
   static async verifyEmail(userId: string): Promise<void> {
     await pool.query<ResultSetHeader>(
       'UPDATE users SET email_verified = 1, email_verification_token = NULL, email_verification_expires = NULL WHERE id = ?',
-      [userId]
-    );
-  }
-
-  static async updateVerificationToken(userId: string, token: string, expires: Date): Promise<void> {
-    await pool.query<ResultSetHeader>(
-      'UPDATE users SET email_verification_token = ?, email_verification_expires = ? WHERE id = ?',
-      [token, expires.toISOString(), userId]
-    );
-  }
-
-  static async updatePasswordResetToken(userId: string, token: string, expires: Date): Promise<void> {
-    await pool.query<ResultSetHeader>(
-      'UPDATE users SET password_reset_token = ?, password_reset_expires = ? WHERE id = ?',
-      [token, expires.toISOString(), userId]
-    );
-  }
-
-  static async clearPasswordResetToken(userId: string): Promise<void> {
-    await pool.query<ResultSetHeader>(
-      'UPDATE users SET password_reset_token = NULL, password_reset_expires = NULL WHERE id = ?',
       [userId]
     );
   }
